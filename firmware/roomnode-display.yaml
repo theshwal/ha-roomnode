@@ -1,0 +1,12 @@
+# HA RoomNode — profil affichage 0,85″ (prototype)
+#
+# Combine le socle commun et le package d'affichage 0,85″.
+# Aucun composant audio ici : ce profil sert à valider l'écran et les LED,
+# indépendamment de la partie voix.
+#
+# L'affichage est isolé dans `roomnode-display-085.yaml` afin de pouvoir
+# remplacer l'écran (1,85″, 2,8″, ...) sans toucher au reste.
+
+packages:
+  common: !include roomnode-common.yaml
+  display_085: !include roomnode-display-085.yaml

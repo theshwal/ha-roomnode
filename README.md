@@ -2,13 +2,27 @@
 
 Terminal domotique de pièce sous **ESPHome + Home Assistant** : écouter, mesurer la présence et l'ambiance, piloter les équipements et fournir des retours visuels. La réponse vocale passe par l'**Amazon Echo déjà présent dans la pièce** ; RoomNode n'a pas besoin de haut-parleur.
 
-> **Statut : cadrage / validation matérielle.** Aucun firmware complet ni prototype physique n'est encore validé. Ne pas considérer les exemples comme du « prêt à flasher ».
+> **Statut (2026-11-02) : firmware ESPHome livré et compilé, pas encore essayé sur la carte.** Les profils `base`, `voice` et `display` passent `esphome config` **et** `esphome compile` (esp-idf). Aucun flash ni essai physique n'a été réalisé : ne pas considérer le firmware comme validé sur matériel.
+
+## Firmware
+
+| Fichier | Rôle |
+| --- | --- |
+| `firmware/roomnode-common.yaml` | socle : plateforme ESP32-S3, Wi-Fi, API chiffrée, OTA, PSRAM, boutons |
+| `firmware/roomnode-base.yaml` | profil **bring-up** minimal (socle seul) |
+| `firmware/roomnode-voice.yaml` | profil **micro + Assist** (ES7210 + I²S + `voice_assistant`) |
+| `firmware/roomnode-display-085.yaml` | package **affichage 0,85″** isolé et remplaçable (GC9107 + WS2812) |
+| `firmware/roomnode-display.yaml` | profil affichage (socle + package 0,85″) |
+| `scripts/validate.sh` | validation statique + compilation, à secrets fictifs |
+| `secrets.example.yaml` | modèle de secrets (valeurs factices) |
+
+Installation, flash et plan de test : [docs/flash.md](docs/flash.md).
 
 ## V1 — périmètre décidé
 
 | Fonction | Choix |
 | --- | --- |
-| Carte | Waveshare **ESP32-S3-LCD-0.85**, SKU **33877** (sans batterie), ESP32-S3 N8R8 |
+| Carte | Waveshare **ESP32-S3-LCD-0.85**, SKU **33878** (ou 33877 **-EN**), ESP32-S3 N8R8 |
 | Voix entrante | Microphones de la carte → ESPHome Voice Assistant → Home Assistant Assist |
 | Voix sortante | Texte de réponse Assist → Home Assistant **Alexa Devices** → entité notify Speak de l'Echo de la même pièce |
 | Présence | Radar **HLK-LD2410C** (UART), présence y compris stationnaire |
@@ -32,6 +46,8 @@ Terminal domotique de pièce sous **ESPHome + Home Assistant** : écouter, mesur
 
 - [Architecture et interactions](docs/architecture.md)
 - [Matériel, interfaces et achats](docs/hardware.md)
+- [Tableau GPIO sourcé](docs/gpio.md)
+- [Installation, flash et plan de test](docs/flash.md)
 - [Plan de validation](docs/validation.md)
 
 ## Premier jalon (bloquant)
@@ -42,6 +58,7 @@ Faire reconnaître **les microphones de la Waveshare par ESPHome** et obtenir un
 
 - [Carte Waveshare ESP32-S3-LCD-0.85 — fabricant](https://www.waveshare.com/product/esp32-s3-lcd-0.85.htm)
 - [Documentation Waveshare](https://docs.waveshare.com/ESP32-S3-LCD-0.85)
+- [Code et schémas officiels Waveshare](https://github.com/waveshareteam/ESP32-S3-LCD-0.85)
 - [ESPHome Voice Assistant](https://esphome.io/components/voice_assistant/)
 - [ESPHome Micro Wake Word](https://esphome.io/components/micro_wake_word/)
 - [ESPHome API / actions Home Assistant](https://esphome.io/components/api/)

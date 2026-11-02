@@ -1,0 +1,15 @@
+# HA RoomNode — firmware de bring-up (base)
+#
+# Cible : Waveshare ESP32-S3-LCD-0.85 (ESP32-S3-PICO-1-N8R8, 8 Mo flash / 8 Mo PSRAM)
+#
+# Ce fichier est volontairement MINIMAL : Wi-Fi + API + OTA + ESPHome
+# (console, mises à jour) uniquement, plus la lecture des deux boutons
+# utilisables (BOOT, PLUS). Aucune fonction avancée (audio, LCD, LED)
+# n'est activée ici : chaque fonction est livrée dans un fichier séparé,
+# validé indépendamment, puis activée par inclusion.
+#
+# Secrets : ce dépôt ne contient AUCUN secret. Fournir `secrets.yaml` localement
+# (voir secrets.example.yaml).
+
+packages:
+  common: !include roomnode-common.yaml

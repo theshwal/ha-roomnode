@@ -1,0 +1,103 @@
+# HA RoomNode — bring-up micro / Voice Assistant (Assist)
+#
+# Cible : Waveshare ESP32-S3-LCD-0.85 (ESP32-S3-PICO-1-N8R8)
+# Base  : firmware/roomnode-base.yaml (Wi-Fi, API, OTA, boutons)
+#
+# OBJECTIF : capturer le signal micro de l'ES7210 et le pousser vers
+# Home Assistant (Assist) via le composant `voice_assistant`.
+#
+# PAS DE HAUT-PARLEUR : l'ES8311 (DAC) et l'ampli NS4150 (PA_CTRL) ne sont
+# volontairement PAS activés. La restitution vocale se fait par l'Echo
+# de la pièce. Le bus I2S reste donc en émission (TX) uniquement : pas de
+# `speaker`, donc pas de pin `i2s_dout_pin`.
+#
+# ------------------------------------------------------------------
+# BROCHAGE (source : waveshareteam/ESP32-S3-LCD-0.85
+#                   hardware/schematics/ESP32-S3-LCD-0.85-Schematics.pdf
+#                   + example/ESP-IDF-5.5.1/01_factory/.../bsp_codec.c)
+# ------------------------------------------------------------------
+#   I2S_MCLK  GPIO8   -> horloge principale (MCLK)   ES7210 + ES8311
+#   I2S_SCLK  GPIO9   -> BCLK (horloge bits)         ES7210 + ES8311
+#   I2S_LRCK  GPIO10  -> LRCK (horloge trames)       ES7210 + ES8311
+#   I2S_ASDOUT GPIO11 <- SDOUT1 de l'ES7210  (DONNÉES MICRO)   <-- entrée ESP32
+#   I2S_DSDIN GPIO12  <- DSDIN de l'ES8311   (vers le DAC)      (non utilisé ici)
+#   PA_CTRL   GPIO7   -> enable de l'ampli NS4150               (non utilisé ici)
+#   I2C SCL   GPIO41  -> CODEC_SCL (ES7210 @0x40, ES8311 @0x18)
+#   I2C SDA   GPIO42  -> CODEC_SDA
+#
+# L'ES7210 sort ses 4 canaux en TDM (SDOUT1 = MIC1+MIC2, SDOUT2 = MIC3+MIC4).
+# Le pilote ESPHome `es7210` ne gère pas le TDM (`enable_tdm_ = false`) :
+# il lit donc SDOUT1, c'est-à-dire les deux microphones MIC1_P/MIC1_N et
+# MIC2_P/MIC2_N. On sélectionne le canal 0 (MIC1) dans la source micro.
+#
+# Les pins I2S se déclarent sur le bloc `i2s_audio:` (bus partagé), et la
+# pin de données micro sur le `microphone:`.
+
+# Secrets : ce dépôt ne contient AUCUN secret. Fournir `secrets.yaml` localement
+# (voir secrets.example.yaml).
+
+packages:
+  common: !include roomnode-common.yaml
+
+i2c:
+  - id: bus_codec
+    sda: GPIO42
+    scl: GPIO41
+    scan: true
+    frequency: 400kHz
+
+i2s_audio:
+  - id: i2s_bus
+    i2s_lrclk_pin: GPIO10
+    i2s_bclk_pin: GPIO9
+    i2s_mclk_pin: GPIO8
+
+# ---------------------------------------------------------------------------
+# Codec d'entrée : ES7210 (4 canaux ADC, 2 micros câblés en différentiel)
+# ---------------------------------------------------------------------------
+audio_adc:
+  - platform: es7210
+    id: es7210_adc
+    bits_per_sample: 16bit
+    sample_rate: 16000
+    mic_gain: 24dB
+
+microphone:
+  - platform: i2s_audio
+    id: mic_es7210
+    i2s_audio_id: i2s_bus
+    i2s_din_pin: GPIO11
+    adc_type: external
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: left
+
+# ---------------------------------------------------------------------------
+# Assist : capture -> Home Assistant. Aucune restitution locale.
+# ---------------------------------------------------------------------------
+voice_assistant:
+  id: va
+  microphone:
+    - microphone: mic_es7210
+      channels: [0]
+  use_wake_word: false
+  noise_suppression_level: 0
+  auto_gain: 0dBFS
+  conversation_timeout: 30s
+
+  on_client_connected:
+    - logger.log: "Assist: client HA connecte"
+  on_client_disconnected:
+    - logger.log: "Assist: client HA deconnecte"
+  on_listening:
+    - logger.log: "Assist: ecoute en cours"
+  on_stt_end:
+    - logger.log:
+        format: "Assist STT: %s"
+        args: ['x']
+  on_error:
+    - logger.log:
+        format: "Assist erreur: %s / %s"
+        args: ['code', 'message']
+  on_end:
+    - logger.log: "Assist: fin de conversation"
