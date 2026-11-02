@@ -1,0 +1,13 @@
+# ESPHome / local secrets
+secrets.yaml
+**/secrets.yaml
+.esphome/
+**/.esphome/
+.env
+.env.*
+!.env.example
+*.bin
+*.elf
+*.map
+*.log
+.DS_Store
