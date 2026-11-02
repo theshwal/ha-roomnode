@@ -17,13 +17,16 @@
 # Variables d'environnement :
 #   ESPHOME_BIN   chemin de l'exécutable esphome (défaut: esphome)
 #   ESPHOME_COMPILE  mettre à 1 pour lancer aussi la compilation
-#   ESPHOME_WORKDIR  répertoire de travail (défaut: /tmp/roomnode-esphome-build)
+#
+# Le répertoire de travail est créé par `mktemp -d` et supprimé en sortie de
+# trap. Aucun `rm -rf` n'est exécuté sur un chemin fourni par l'utilisateur :
+# une variable d'environnement ne peut donc pas provoquer de suppression
+# arbitraire.
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ESPHOME_BIN="${ESPHOME_BIN:-esphome}"
-WORKDIR="${ESPHOME_WORKDIR:-/tmp/roomnode-esphome-build}"
 
 if ! command -v "$ESPHOME_BIN" >/dev/null 2>&1; then
   echo "ERREUR: '$ESPHOME_BIN' introuvable dans le PATH." >&2
@@ -31,11 +34,21 @@ if ! command -v "$ESPHOME_BIN" >/dev/null 2>&1; then
   exit 127
 fi
 
+# Répertoire de travail créé par mktemp : chemin aléatoire, créé par le
+# script, jamais dérivé d'une saisie utilisateur.
+WORKDIR="$(mktemp -d "${TMPDIR:-/tmp}/roomnode-esphome-build.XXXXXXXX")"
+
+cleanup() {
+  if [ -n "${WORKDIR:-}" ] && [ -d "$WORKDIR" ]; then
+    rm -rf -- "$WORKDIR"
+  fi
+}
+trap cleanup EXIT INT TERM
+
 echo "==> ESPHome: $("$ESPHOME_BIN" version)"
 echo "==> Dépôt:   $REPO_ROOT"
 echo "==> Build:   $WORKDIR"
 
-rm -rf "$WORKDIR"
 mkdir -p "$WORKDIR"
 
 # Valeurs factices. Aucune n'est un secret : elles servent uniquement à

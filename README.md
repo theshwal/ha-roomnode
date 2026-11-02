@@ -4,7 +4,7 @@ Terminal domotique de pièce sous **ESPHome + Home Assistant** : écouter, mesur
 
 > **Statut (2026-11-02) : firmware ESPHome livré et compilé, pas encore essayé sur la carte.** Les profils `base`, `voice` et `display` passent `esphome config` **et** `esphome compile` (esp-idf). Aucun flash ni essai physique n'a été réalisé : ne pas considérer le firmware comme validé sur matériel.
 
-## Firmware
+## Firmware (prototype 0,85″)
 
 | Fichier | Rôle |
 | --- | --- |
@@ -18,16 +18,24 @@ Terminal domotique de pièce sous **ESPHome + Home Assistant** : écouter, mesur
 
 Installation, flash et plan de test : [docs/flash.md](docs/flash.md).
 
+> ⚠️ **Carte cible V1 : Waveshare ESP32-S3-Touch-LCD-4.3C** (tactile 800×480,
+> GT911, ES7210, ES8311) — actée par les issues **#1 / #4 / #7**.
+> Le firmware ci-dessus cible la **ESP32-S3-LCD-0.85** : c'est un
+> **prototype historique / PoC**, conservé comme référence de structure
+> (socle / package d'affichage remplaçable / profil voix). Le portage 4.3C
+> fait l'objet d'une branche distincte.
+
 ## V1 — périmètre décidé
 
 | Fonction | Choix |
 | --- | --- |
-| Carte | Waveshare **ESP32-S3-LCD-0.85**, SKU **33878** (ou 33877 **-EN**), ESP32-S3 N8R8 |
+| Carte | Waveshare **ESP32-S3-Touch-LCD-4.3C** (tactile 800×480, GT911, ES7210, ES8311) — cible V1, cf. #7 |
+| Prototype historique | Waveshare **ESP32-S3-LCD-0.85**, SKU **33878** (ou 33877 **-EN**), ESP32-S3 N8R8 — PoC firmware de cette branche |
 | Voix entrante | Microphones de la carte → ESPHome Voice Assistant → Home Assistant Assist |
 | Voix sortante | Texte de réponse Assist → Home Assistant **Alexa Devices** → entité notify Speak de l'Echo de la même pièce |
 | Présence | Radar **HLK-LD2410C** (UART), présence y compris stationnaire |
 | Température / humidité | **SHT40** sur I²C (un capteur, deux mesures) |
-| Interface | LCD 0,85″ 128×128 (GC9107), 8 LEDs RGB, boutons présents sur la carte |
+| Interface | Écran tactile 800×480 + GT911, 8 LEDs RGB, boutons de la carte |
 | Connectivité | Wi-Fi local + API ESPHome |
 | Options différées | BH1750 (luminosité), SCD40 (CO₂), infrarouge, fonctions réseau additionnelles |
 | Hors V1 | e-paper, PM/COV/NOx, répéteur Wi-Fi, Bluetooth Proxy, haut-parleur interne |

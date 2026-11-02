@@ -8,8 +8,14 @@
 #
 # PAS DE HAUT-PARLEUR : l'ES8311 (DAC) et l'ampli NS4150 (PA_CTRL) ne sont
 # volontairement PAS activés. La restitution vocale se fait par l'Echo
-# de la pièce. Le bus I2S reste donc en émission (TX) uniquement : pas de
-# `speaker`, donc pas de pin `i2s_dout_pin`.
+# de la pièce. Concrètement : ce profil ne declare QUE la reception
+# (RX) du bus I2S - l'ESP32 recoit les donnees micro sur `i2s_din_pin`.
+# Aucun `speaker` n'est declare, donc aucune pin `i2s_dout_pin` (TX) n'est
+# utilisee : le DAC ES8311 et la sortie ligne de l'ES7210 restent inutilises.
+#
+# Sens des lignes I2S sur cette carte :
+#   - ES7210 (ADC micro) -> ESP32 : RX cote ESP32, c'est le flux utile ici.
+#   - ESP32 -> ES8311 (DAC) : TX cote ESP32, volontairement non Cable.
 #
 # ------------------------------------------------------------------
 # BROCHAGE (source : waveshareteam/ESP32-S3-LCD-0.85
@@ -19,8 +25,8 @@
 #   I2S_MCLK  GPIO8   -> horloge principale (MCLK)   ES7210 + ES8311
 #   I2S_SCLK  GPIO9   -> BCLK (horloge bits)         ES7210 + ES8311
 #   I2S_LRCK  GPIO10  -> LRCK (horloge trames)       ES7210 + ES8311
-#   I2S_ASDOUT GPIO11 <- SDOUT1 de l'ES7210  (DONNÉES MICRO)   <-- entrée ESP32
-#   I2S_DSDIN GPIO12  <- DSDIN de l'ES8311   (vers le DAC)      (non utilisé ici)
+#   I2S_ASDOUT GPIO11 <- SDOUT1 de l'ES7210  (DONNÉES MICRO)   <-- RX cote ESP32
+#   I2S_DSDIN GPIO12  <- DSDIN de l'ES8311   (vers le DAC)      (TX non utilise)
 #   PA_CTRL   GPIO7   -> enable de l'ampli NS4150               (non utilisé ici)
 #   I2C SCL   GPIO41  -> CODEC_SCL (ES7210 @0x40, ES8311 @0x18)
 #   I2C SDA   GPIO42  -> CODEC_SDA

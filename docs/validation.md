@@ -47,6 +47,17 @@ Wi-Fi se connecte, que l'ES7210 répond sur I²C, que le micro capte un signal
 exploitable, ni que l'écran affiche quoi que ce soit. Ces points exigent la
 carte physique et sont listés en § 7 de [flash.md](flash.md).
 
+### Portée de la CI
+
+La CI GitHub (`.github/workflows/validate-firmware.yml`) lance
+`scripts/validate.sh` **sans** `ESPHOME_COMPILE=1` : elle valide donc le
+**schéma** des configurations (`esphome config`) sur les trois profils.
+
+Elle **ne compile pas** le firmware. Les tableaux de tailles ci-dessus sont
+des **preuves de compilation locales**, obtenues avec
+`ESPHOME_COMPILE=1 scripts/validate.sh` sur la machine de développement, et
+ne sont pas des artefacts CI.
+
 ## J0 — Compatibilité carte, sans capteurs
 
 - [x] Vérifier SKU et révision exacte de la carte — fiche officielle : SKU 33878 = ESP32-S3-LCD-0.85, SKU 33877 = ESP32-S3-LCD-0.85-**EN**

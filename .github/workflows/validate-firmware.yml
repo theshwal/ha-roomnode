@@ -1,5 +1,9 @@
 name: Validate ESPHome firmware configs
 
+# Cette CI valide le SCHEMA des configurations ESPHome (esphome config).
+# Elle ne compile PAS le firmware : les preuves de compilation sont locales
+# (voir docs/validation.md). Une job de compilation serait ajoutee ulterieurement.
+
 on:
   push:
     paths:
@@ -30,12 +34,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install "esphome==2026.10.1"
-      - name: Validate configs (fictitious secrets)
+      - name: Validate configs (fictitious secrets, schema only)
         run: scripts/validate.sh
       - name: Upload validation log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: esphome-validation-log
-          path: /tmp/roomnode-esphome-build/
+          path: ${{ runner.temp }}/roomnode-esphome-build.*/
           if-no-files-found: ignore

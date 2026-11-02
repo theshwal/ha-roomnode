@@ -74,7 +74,11 @@ Variables d'environnement utiles :
 | --- | --- | --- |
 | `ESPHOME_BIN` | `esphome` | exécutable ESPHome |
 | `ESPHOME_COMPILE` | `0` | mettre `1` pour compiler |
-| `ESPHOME_WORKDIR` | `/tmp/roomnode-esphome-build` | répertoire de build |
+
+Le répertoire de travail est créé par `mktemp -d` (chemin aléatoire) et
+supprimé automatiquement en sortie de script. Aucun chemin de build n'est
+accepté depuis l'environnement : il n'existe donc aucune suppression
+arbitraire possible.
 
 ## 4. Profils de firmware
 
