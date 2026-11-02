@@ -1,0 +1,23 @@
+# EXTRACT ONLY — not a standalone firmware.
+# Merge under the existing voice_assistant: block in the board-specific config.
+# Device microphone "roomnode_microphone" must exist and work first.
+#
+# In the HA package, map roomnode_test to your *real* Alexa Devices Speak entity.
+# Use a stable per-device node_id, never the last Alexa device called.
+#
+# NOTE: on_tts_start requires a TTS step enabled in the Assist pipeline,
+# despite the absence of any local speaker.
+voice_assistant:
+  id: roomnode_assist
+  microphone: roomnode_microphone
+  on_tts_start:
+    - homeassistant.action:
+        action: script.roomnode_speak
+        data:
+          roomnode: roomnode_test
+        data_template:
+          message: "{{ reply }}"
+        variables:
+          reply: !lambda 'return x;'
+        on_error:
+          - logger.log: "RoomNode: impossible de demander la réponse vocale à Home Assistant"

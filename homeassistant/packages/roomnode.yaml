@@ -1,0 +1,42 @@
+# Example Home Assistant package. Copy to your local /config/packages/ directory,
+# then adapt the allowlisted map of RoomNode IDs to actual Alexa Devices Speak entities.
+# No tokens, IPs, Amazon credentials or real device names belong in this public repo.
+script:
+  roomnode_speak:
+    alias: RoomNode — réponse vocale Echo de la pièce
+    description: >-
+      Envoie une réponse Assist à l'Echo explicitement associé à un RoomNode.
+      Ne route jamais la réponse vers le dernier Echo appelé.
+    mode: queued
+    max: 10
+    fields:
+      roomnode:
+        name: Identifiant RoomNode
+        description: Identifiant constant défini dans le firmware ESPHome.
+        required: true
+        selector:
+          text:
+      message:
+        name: Texte à prononcer
+        required: true
+        selector:
+          text:
+            multiline: true
+    sequence:
+      - variables:
+          # REMPLACER par de vrais IDs d'entités notify.*_speak.
+          # Identifiants d'exemple neutres : aucun appareil réel publié.
+          echo_by_roomnode:
+            roomnode_test: notify.replace_with_your_echo_speak
+          target_speak: "{{ echo_by_roomnode.get(roomnode | default('', true), '') }}"
+          spoken_text: "{{ message | default('', true) | string | trim }}"
+      - condition: template
+        value_template: >-
+          {{ target_speak.startswith('notify.')
+             and target_speak.endswith('_speak')
+             and 0 < (spoken_text | length) <= 500 }}
+      - action: notify.send_message
+        target:
+          entity_id: "{{ target_speak }}"
+        data:
+          message: "{{ spoken_text }}"
