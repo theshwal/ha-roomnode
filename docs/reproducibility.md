@@ -170,3 +170,36 @@ Extrait de journal :
 | Écriture installation / OTA / dépannage / sécurisation des secrets | **fait** pour ce qui est automatisable (§ 3, § 4, § 5) |
 | Qualification de deux nœuds voisins | **non fait** (demande deux cartes) |
 | Préparation d'une deuxième unité sans réécriture de code | **partiellement démontré** : le paramétrage par instance compile, mais le flash et la mise en service réels n'ont pas été faits |
+
+## 8. Audit d'intégration : extract Assist → Alexa (PR #6)
+
+La PR #6 fournit un extrait à fusionner sous le bloc `voice_assistant:` :
+
+```yaml
+voice_assistant:
+  id: roomnode_assist
+  microphone: roomnode_microphone
+  on_tts_start:
+    - homeassistant.action:
+        action: script.roomnode_speak
+        ...
+```
+
+**Audit de compatibilité avec le profil V1 actuel** (4.3C), réalisé en
+configuration seule, **sans déploiement ni essai matériel** :
+
+| Point | Résultat |
+| --- | --- |
+| `on_tts_start` existe dans `voice_assistant` | **oui** — `CONF_ON_TTS_START` est supporté par le composant ESPHome 2026.10.1 |
+| Le bloc `voice_assistant:` du profil V1 accepte `on_tts_start` | **oui** — le bloc inséré sur le profil V1 passe `esphome config` (`INFO Configuration is valid!`) |
+| Action `homeassistant.action` avec `data_template` / `variables` | **oui** — schéma accepté |
+| Identifiants | à aligner : l'extrait utilise `id: roomnode_assist` et `roomnode_microphone`, le profil V1 utilise `id: va` et `mic_es7210` |
+| Chaîne Home Assistant → Alexa Devices | **non testée** — la PR #6 reste draft |
+
+Deux écarts à corriger lors de l'intégration : les **identifiants** et le
+fait que l'extrait de #6 est écrit pour un profil à micro simple, alors que
+le profil V1 déclare une **liste** de sources micro
+(`microphone: [{microphone: mic_es7210, channels: [0]}]`).
+
+L'audit ne porte que sur la **validité de la configuration**. Il ne dit rien
+du comportement de la chaîne vocale, qui reste non testé de bout en bout.
