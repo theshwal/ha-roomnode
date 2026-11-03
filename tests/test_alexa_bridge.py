@@ -53,7 +53,7 @@ class AlexaBridgeContractTests(unittest.TestCase):
         self.assertEqual(action["data"]["message"], "{{ spoken_text }}")
 
     def test_known_room_routes_to_one_echo(self):
-        allowed, target, text = self._render_condition("roomnode_test", "  Bonjour !  ")
+        allowed, target, text = self._render_condition("roomnode_salon", "  Bonjour !  ")
         self.assertTrue(allowed)
         self.assertEqual(target, "notify.replace_with_your_echo_speak")
         self.assertEqual(text, "Bonjour !")
@@ -66,23 +66,38 @@ class AlexaBridgeContractTests(unittest.TestCase):
     def test_empty_or_oversize_messages_are_rejected(self):
         for value in ("", "  ", "x" * 501):
             with self.subTest(value_length=len(value)):
-                allowed, _, _ = self._render_condition("roomnode_test", value)
+                allowed, _, _ = self._render_condition("roomnode_salon", value)
                 self.assertFalse(allowed)
-        allowed, _, _ = self._render_condition("roomnode_test", "x" * 500)
+        allowed, _, _ = self._render_condition("roomnode_salon", "x" * 500)
         self.assertTrue(allowed)
 
     def test_reject_non_speak_target(self):
         allowed, _, _ = self._render_condition(
-            "roomnode_test", "Bonjour", target_override="notify.all"
+            "roomnode_salon", "Bonjour", target_override="notify.all"
         )
         self.assertFalse(allowed)
 
     def test_esphome_hook_is_documented_and_templated(self):
         hook = self.sample["voice_assistant"]["on_tts_start"][0]["homeassistant.action"]
         self.assertEqual(hook["action"], "script.roomnode_speak")
-        self.assertEqual(hook["data"]["roomnode"], "roomnode_test")
+        # The node identifier is a substitution so the same extract works for
+        # every room. It must resolve to a per-device key of the HA allowlist,
+        # never to a fixed value and never to a broadcast target.
+        self.assertEqual(hook["data"]["roomnode"], "${node_name}")
         self.assertEqual(hook["data_template"]["message"], "{{ reply }}")
         self.assertEqual(hook["variables"]["reply"], "return x;")
+
+    def test_esphome_hook_handles_action_errors(self):
+        hook = self.sample["voice_assistant"]["on_tts_start"][0]["homeassistant.action"]
+        on_error = hook.get("on_error")
+        self.assertIsNotNone(on_error, "the hook must handle action failures")
+        self.assertTrue(str(on_error).strip())
+
+    def test_esphome_hook_never_targets_a_broadcast(self):
+        hook = self.sample["voice_assistant"]["on_tts_start"][0]["homeassistant.action"]
+        payload = yaml.safe_dump(hook, allow_unicode=True)
+        self.assertNotIn("notify.all", payload)
+        self.assertNotIn("all.", payload)
 
 
 if __name__ == "__main__":

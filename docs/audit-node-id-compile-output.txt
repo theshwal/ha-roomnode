@@ -1,0 +1,14 @@
+Correctif PR #6 - identifiant de noeud parametre (${node_name})
+Extrait #6 compile sur le contexte materiel 4.3C (ecran RGB + GT911 + ES7210).
+Configuration seulement, valeurs fictices, aucun deploiement ni essai materiel.
+
+esphome config  -> INFO Configuration is valid!
+esphome compile -> exit 0
+
+roomnode.bin binary size 0xe2f10 bytes. Smallest app partition is 0x7c0000 bytes. 0x6dd0f0 bytes (89%) free.
+RAM:   [===       ]  32.2% (used 110163 bytes from 341760 bytes)
+Flash: [=         ]  11.4% (used 929431 bytes from 8126464 bytes)
+INFO Successfully compiled program.
+
+Tests statiques du pont Alexa : 8 tests OK.
+Aucune chaine HA/Alexa testee. La PR #6 reste draft.

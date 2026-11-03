@@ -2,8 +2,14 @@
 # Merge under the existing voice_assistant: block in the board-specific config.
 # Device microphone "roomnode_microphone" must exist and work first.
 #
-# In the HA package, map roomnode_test to your *real* Alexa Devices Speak entity.
-# Use a stable per-device node_id, never the last Alexa device called.
+# In the HA package, map the node identifier to your *real* Alexa Devices
+# Speak entity. Use a stable per-device node_id, never the last Alexa device
+# called.
+#
+# The node identifier is a substitution so the same extract works for every
+# room: define `node_name` in the board-specific config (see
+# firmware/roomnode-43c-common.yaml). It must match a key of the
+# `echo_by_roomnode` map in the Home Assistant package.
 #
 # NOTE: on_tts_start requires a TTS step enabled in the Assist pipeline,
 # despite the absence of any local speaker.
@@ -14,7 +20,7 @@ voice_assistant:
     - homeassistant.action:
         action: script.roomnode_speak
         data:
-          roomnode: roomnode_test
+          roomnode: ${node_name}
         data_template:
           message: "{{ reply }}"
         variables:
