@@ -1,0 +1,43 @@
+INFO ESPHome 2026.10.1
+INFO Reading configuration 43c.yaml...
+WARNING 'ota' password wastes significant flash and RAM; using 'encryption' instead is recommended - see https://esphome.io/components/ota/esphome/#configuration-variables
+INFO Configuration is valid!
+OK: configuration valide (43c)
+INFO ESPHome 2026.10.1
+INFO Reading configuration 43c.yaml...
+WARNING 'ota' password wastes significant flash and RAM; using 'encryption' instead is recommended - see https://esphome.io/components/ota/esphome/#configuration-variables
+INFO Checking ESP-IDF 5.5.6 framework ...
+INFO Checking ESP-IDF 5.5.6 framework installation ...
+INFO Checking ESP-IDF 5.5.6 Python environment ...
+-- App "roomnode" version: 2026.10.1
+Bootloader binary size 0x5020 bytes. 0x2fe0 bytes (37%) free.
+roomnode.bin binary size 0xe0780 bytes. Smallest app partition is 0x7c0000 bytes. 0x6df880 bytes (89%) free.
+RAM:   [===       ]  32.3% (used 110235 bytes from 341760 bytes)
+Flash: [=         ]  11.3% (used 919307 bytes from 8126464 bytes)
+INFO Successfully compiled program.
+OK: compilation reussie (43c)
+INFO ESPHome 2026.10.1
+INFO Reading configuration 43c-ui.yaml...
+WARNING 'ota' password wastes significant flash and RAM; using 'encryption' instead is recommended - see https://esphome.io/components/ota/esphome/#configuration-variables
+WARNING Found and merged multiple configurations for ota platform esphome port(s) [3232]
+WARNING 'ota' password wastes significant flash and RAM; using 'encryption' instead is recommended - see https://esphome.io/components/ota/esphome/#configuration-variables
+WARNING Field 'transparency_key' is being redacted by a legacy substring heuristic. Mark this field's schema validator with cv.sensitive(...) for deterministic redaction; the heuristic will be removed in 2026.12.0.
+INFO Configuration is valid!
+OK: configuration valide (43c-ui)
+INFO ESPHome 2026.10.1
+INFO Reading configuration 43c-ui.yaml...
+WARNING 'ota' password wastes significant flash and RAM; using 'encryption' instead is recommended - see https://esphome.io/components/ota/esphome/#configuration-variables
+WARNING Found and merged multiple configurations for ota platform esphome port(s) [3232]
+WARNING 'ota' password wastes significant flash and RAM; using 'encryption' instead is recommended - see https://esphome.io/components/ota/esphome/#configuration-variables
+WARNING Flex cross alignment 'stretch' is not supported at runtime; using 'center' instead
+WARNING Flex cross alignment 'stretch' is not supported at runtime; using 'center' instead
+INFO Checking ESP-IDF 5.5.6 framework ...
+INFO Checking ESP-IDF 5.5.6 framework installation ...
+INFO Checking ESP-IDF 5.5.6 Python environment ...
+-- App "roomnode" version: 2026.10.1
+Bootloader binary size 0x5020 bytes. 0x2fe0 bytes (37%) free.
+roomnode.bin binary size 0x1195d0 bytes. Smallest app partition is 0x7c0000 bytes. 0x6a6a30 bytes (86%) free.
+RAM:   [===       ]  32.9% (used 112347 bytes from 341760 bytes)
+Flash: [=         ]  14.2% (used 1152347 bytes from 8126464 bytes)
+INFO Successfully compiled program.
+OK: compilation reussie (43c-ui)

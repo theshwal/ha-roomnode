@@ -1,0 +1,12 @@
+# HA RoomNode — cible V1 4.3C + interface tactile LVGL (issue #4)
+#
+# Combine le profil V1 (ecran RGB 800x480, tactile GT911, micro ES7210
+# + Assist) et l'interface LVGL de piece.
+#
+# L'interface LVGL ne consomme aucun GPIO supplementaire : elle reutilise
+# l'ecran et le tactile deja cables par le profil V1.
+
+packages:
+  common: !include roomnode-43c-common.yaml
+  v1_43c: !include roomnode-43c.yaml
+  ui: !include roomnode-43c-lvgl.yaml
