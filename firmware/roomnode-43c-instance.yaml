@@ -1,0 +1,21 @@
+# HA RoomNode — profil d'instance (exemple)
+#
+# Ce profil montre comment configurer un noeud pour une piece sans
+# modifier le firmware commun. C'est le modele a copier pour une nouvelle
+# piece (issue #5).
+#
+# Pour une piece reelle :
+#   1. copier `firmware/instance-example.yaml` en
+#      `firmware/instance-<piece>.yaml` et y renseigner les substitutions ;
+#   2. copier ce profil en `firmware/roomnode-43c-<piece>.yaml` en
+#      changeant l'include de `params` ;
+#   3. renseigner le fichier de secrets local ;
+#   4. `esphome run firmware/roomnode-43c-<piece>.yaml`.
+#
+# Aucun secret n'est requis pour cette page : le Wi-Fi, l'OTA et l'API
+# viennent du fichier de secrets local, resolu par `!secret`.
+
+packages:
+  common: !include roomnode-43c-common.yaml
+  v1_43c: !include roomnode-43c.yaml
+  params: !include instance-example.yaml

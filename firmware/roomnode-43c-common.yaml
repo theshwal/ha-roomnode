@@ -7,13 +7,24 @@
 # Ce package ne contient que la plateforme, la connectivité et l'OTA.
 # Il est partage par tous les profils de la cible V1.
 #
+# PARAMETRAGE PAR INSTANCE (issue #5) : le nom du noeud et le nom lisible
+# viennent des `substitutions`, fournies par le fichier d'instance include
+# par le profil. Sans ce fichier, les valeurs de repli ci-dessous
+# s'appliquent : le profil reste donc utilisable tel quel.
+#
 # Secrets : ce dépôt ne contient AUCUN secret. Fournir le fichier de secrets
 # local (voir secrets.example.yaml). Les secrets sont resolus par rapport
 # au fichier qui les declare : ils sont donc declares ici.
 
+substitutions:
+  node_name: roomnode
+  node_friendly_name: RoomNode
+  ha_zone: ""
+  room_label: ""
+
 esphome:
-  name: roomnode
-  friendly_name: RoomNode
+  name: ${node_name}
+  friendly_name: ${node_friendly_name}
   comment: "HA RoomNode — Waveshare ESP32-S3-Touch-LCD-4.3C"
 
 esp32:

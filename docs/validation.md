@@ -30,11 +30,14 @@ Résultat : **exit code 0**.
 | Profil | Taille image | RAM (DIRAM) | Flash (part. app) |
 | --- | ---: | ---: | ---: |
 | `43c` (écran RGB 800×480 + GT911 + ES7210 + Assist) | 919 307 o | 110 235 o (32,3 %) | 11,3 % (8 126 464 o) |
+| `43c-instance` (même chose, nom de nœud paramétré — issue #5) | 919 311 o | 110 267 o (32,3 %) | 11,3 % (8 126 464 o) |
 
 Artefacts produits : `firmware.factory.bin`, `firmware.ota.bin`, `firmware.elf`.
 
 Extrait de journal conservé dans le dépôt :
-[`docs/build-43c-output.txt`](build-43c-output.txt).
+[`docs/build-43c-output.txt`](build-43c-output.txt) et
+[`docs/build-43c-instance-output.txt`](build-43c-instance-output.txt)
+(profil `43c-instance`).
 
 Ce que ces chiffres **ne** prouvent pas : que le firmware démarre, que le
 PSRAM est détecté, que le bus I²C répond (GT911 `0x5D`, CH422G, ES7210

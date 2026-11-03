@@ -1,0 +1,40 @@
+INFO ESPHome 2026.10.1
+INFO Reading configuration 43c.yaml...
+substitutions:
+  node_name: roomnode
+  name: roomnode
+  friendly_name: RoomNode
+INFO Configuration is valid!
+OK: configuration valide (43c)
+INFO ESPHome 2026.10.1
+INFO Reading configuration 43c.yaml...
+INFO Checking ESP-IDF 5.5.6 framework ...
+INFO Checking ESP-IDF 5.5.6 framework installation ...
+INFO Checking ESP-IDF 5.5.6 Python environment ...
+-- App "roomnode" version: 2026.10.1
+Bootloader binary size 0x5020 bytes. 0x2fe0 bytes (37%) free.
+roomnode.bin binary size 0xe0780 bytes. Smallest app partition is 0x7c0000 bytes. 0x6df880 bytes (89%) free.
+RAM:   [===       ]  32.3% (used 110235 bytes from 341760 bytes)
+Flash: [=         ]  11.3% (used 919307 bytes from 8126464 bytes)
+INFO Successfully compiled program.
+OK: compilation reussie (43c)
+INFO ESPHome 2026.10.1
+INFO Reading configuration 43c-instance.yaml...
+substitutions:
+  node_name: roomnode-salon
+  name: roomnode-salon
+  friendly_name: RoomNode Salon
+INFO Configuration is valid!
+OK: configuration valide (43c-instance)
+INFO ESPHome 2026.10.1
+INFO Reading configuration 43c-instance.yaml...
+INFO Checking ESP-IDF 5.5.6 framework ...
+INFO Checking ESP-IDF 5.5.6 framework installation ...
+INFO Checking ESP-IDF 5.5.6 Python environment ...
+-- App "roomnode-salon" version: 2026.10.1
+Bootloader binary size 0x5020 bytes. 0x2fe0 bytes (37%) free.
+roomnode-salon.bin binary size 0xe0780 bytes. Smallest app partition is 0x7c0000 bytes. 0x6df880 bytes (89%) free.
+RAM:   [===       ]  32.3% (used 110267 bytes from 341760 bytes)
+Flash: [=         ]  11.3% (used 919311 bytes from 8126464 bytes)
+INFO Successfully compiled program.
+OK: compilation reussie (43c-instance)
