@@ -1,0 +1,43 @@
+# HA RoomNode — paramètres par instance (issue #5)
+#
+# Ce fichier porte les paramètres qui changent d'une pièce à l'autre.
+# Il ne contient QUE des valeurs non sensibles : le nom, la zone, et la
+# référence de l'entité Speak associée. Aucun secret, aucune adresse IP,
+# aucun identifiant de compte.
+#
+# Utilisation : copier ce fichier en `instance-<piece>.yaml` (non versionné,
+# ou versionné si les noms de pièces ne sont pas sensibles) puis l'inclure :
+#
+#   packages:
+#     common:  !include roomnode-43c-common.yaml
+#     v1_43c:  !include roomnode-43c.yaml
+#     params:  !include instance-<piece>.yaml
+#
+# Le fichier de secrets local reste le seul porteur des clés Wi-Fi, OTA et
+# API. Il n'est jamais versionné (voir .gitignore).
+
+substitutions:
+  # Nom de noeud ESPHome : doit être unique sur le reseau (mDNS).
+  # Convention : roomnode-<piece>, en minuscules et sans espace.
+  node_name: roomnode-salon
+
+  # Nom lisible par l'utilisateur dans Home Assistant.
+  node_friendly_name: RoomNode Salon
+
+  # Zone Home Assistant de la piece (a creer dans HA).
+  # Sert au routage : c'est cette zone qui declenche les scenarios.
+  ha_zone: salon
+
+  # Nom court de la piece, utilise dans les libelles de l'interface et
+  # les messages de log.
+  room_label: Salon
+
+  # Reference de l'entite `notify.*_speak` de l'Echo associe a cette piece.
+  # Vide par defaut : l'interface n'appelle jamais l'Echo (voir
+  # docs/architecture.md, la reponse vocale sortante est un chantier
+  # distinct, PR #6).
+  echo_speak_entity: ""
+
+  # Identifiant de l'entite HA qui porte l'identifiant de l'Echo pour cette
+  # piece. Vide par defaut, meme raison.
+  echo_target_entity: ""
