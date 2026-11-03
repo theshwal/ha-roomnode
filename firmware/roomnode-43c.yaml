@@ -1,0 +1,177 @@
+# HA RoomNode — cible V1 : Waveshare ESP32-S3-Touch-LCD-4.3C
+#
+# Carte : ESP32-S3-WROOM-1-N16R8 (16 Mo flash / 8 Mo PSRAM octal)
+# SKU   : 33799 (sans boîtier) / 33630 (avec boîtier plastique)
+# Ref.  : https://docs.waveshare.com/ESP32-S3-Touch-LCD-4.3C
+#         https://github.com/waveshareteam/ESP32-S3-Touch-LCD-4.3C
+#         hardware/schematics/ESP32-S3-Touch-LCD-4.3C-Schematics.pdf
+#
+# ------------------------------------------------------------------
+# SOURCES DU BROCHAGE
+# ------------------------------------------------------------------
+# 1. Schéma officiel (V1.1) : nets I2S_*, LCD_*, CODEC_*, CTP_* et la
+#    table de correspondance ESP32-S3 -> connecteur PORT1 (40 broches).
+# 2. Fiche officielle Waveshare : tables "ESP32-S3 / IO EXTENSION to LCD Pin
+#    Mapping Table", "to Touch", "to Audio Codec".
+# 3. Composant ESPHome natif `mipi_rgb` : modele `ESP32-S3-TOUCH-LCD-4.3`
+#    (esphome/components/mipi_rgb/models/waveshare.py) dont les data_pins,
+#    porches et pins de timing correspondent au schema ci-dessus.
+# 4. Composant ESPHome `ch422g` : l'expander I2C de la carte pilote le
+#    reset ecran (EXIO2 / ch422g pin 3), le retroeclairage (EXIO2 / pin 2),
+#    le reset du tactile (EXIO1 / pin 1), le PA_CTRL (EXIO4) et le CS TF.
+# 5. Composant ESPHome `gt911` : controlleur tactile capacitif, I2C a 0x5D,
+#    IRQ sur GPIO4, reset via CH422G.
+#
+# ------------------------------------------------------------------
+# BROCHAGE RETENU (concordant schema officiel + modele ESPHome)
+# ------------------------------------------------------------------
+#   ECRAN RGB 800x480 (interface RGB 16 bits, 16 broches)
+#     R3  GPIO1     G2  GPIO39    B3  GPIO14
+#     R4  GPIO2     G3  GPIO0     B4  GPIO38
+#     R5  GPIO42    G4  GPIO45    B5  GPIO18
+#     R6  GPIO41    G5  GPIO48    B6  GPIO17
+#     R7  GPIO40    G6  GPIO47    B7  GPIO10
+#                  G7  GPIO21
+#     PCLK GPIO7 (inversee)   HSYNC GPIO46   VSYNC GPIO3   DE GPIO5
+#
+#   TACTILE GT911
+#     SDA GPIO8    SCL GPIO9    IRQ GPIO4
+#     reset tactile : CH422G pin 1 (EXIO1)
+#     reset ecran   : CH422G pin 3 (EXIO2)      (par le modele mipi_rgb)
+#     retroeclairage: CH422G pin 2 (EXIO2)      (par le modele mipi_rgb)
+#
+#   AUDIO (ES7210 = ADC micro 4 canaux, ES8311 = DAC, NS4150 = ampli)
+#     I2S_MCLK   GPIO6
+#     I2S_SCLK   GPIO44
+#     I2S_LRCK   GPIO16
+#     I2S_ASDOUT GPIO43   <- donnees micro venant de l'ES7210 (RX cote ESP32)
+#     I2S_DSDIN  GPIO15   <- vers l'ES8311 (TX cote ESP32, non utilise en V1)
+#     I2C audio  SDA GPIO8 / SCL GPIO9 (bus partage avec GT911 et CH422G)
+#     PA_CTRL    EXIO4 via CH422G (non active en V1)
+#
+#   AUTRES
+#     TF card    MOSI GPIO11 / SCK GPIO12 / MISO GPIO13 / CS EXIO4
+#     USB        GPIO19 / GPIO20
+#     RTC PCF85063 : SDA/SCL GPIO8/GPIO9 (bus I2C partage)
+#
+# ------------------------------------------------------------------
+# AUCUN HAUT-PARLEUR : l'ES8311 (DAC), le NS4150 et PA_CTRL ne sont pas
+# actives. La restitution vocale reste assuree par l'Echo de la piece.
+# Le bus I2S n'est donc declare qu'en RECEPTION (RX) cote ESP32 : pas de
+# `speaker`, donc pas de pin `i2s_dout_pin` (TX).
+# ------------------------------------------------------------------
+
+packages:
+  common: !include roomnode-43c-common.yaml
+
+# ---------------------------------------------------------------------------
+# Bus I2C unique de la carte : GT911 (tactile 0x5D), CH422G (expander),
+# ES7210 (ADC, 0x40), ES8311 (DAC, 0x18) et PCF85063 (RTC).
+# ---------------------------------------------------------------------------
+i2c:
+  - id: bus_a
+    sda: GPIO8
+    scl: GPIO9
+    scan: true
+    frequency: 400kHz
+
+# ---------------------------------------------------------------------------
+# Expander I2C CH422G : reset de l'ecran et retroeclairage.
+# ---------------------------------------------------------------------------
+ch422g:
+  - id: ch422g_hub
+
+# ---------------------------------------------------------------------------
+# Ecran tactile 800x480 RGB.
+# Le modele ESPHome `ESP32-S3-TOUCH-LCD-4.3` encode deja le câblage RGB
+# 16 bits de cette carte (data_pins, porches, pins de timing, PSRAM requis).
+# ---------------------------------------------------------------------------
+display:
+  - platform: mipi_rgb
+    id: lcd_43c
+    model: ESP32-S3-TOUCH-LCD-4.3
+    auto_clear_enabled: false
+    update_interval: never
+    color_order: RGB
+    invert_colors: false
+
+touchscreen:
+  - platform: gt911
+    id: touch_43c
+    display: lcd_43c
+    interrupt_pin: GPIO4
+    # Reset du GT911 : net `CTP_RST` du schema officiel, cable sur
+    # EXIO1 = CH422G pin 1 (libre : le modele mipi_rgb utilise les pins 2 et 3).
+    # Sans ce reset, le GT911 peut demarrer sur son adresse secondaire
+    # (0x14) au lieu de 0x5D, ce qui rend le scan I2C aleatoire.
+    reset_pin:
+      ch422g: ch422g_hub
+      number: 1
+    on_touch:
+      - logger.log:
+          format: "Touch x=%d y=%d"
+          args: ['touch.x', 'touch.y']
+
+# NOTE retroeclairage : le modele `ESP32-S3-TOUCH-LCD-4.3` de `mipi_rgb`
+# declare deja `enable_pin` sur CH422G pin 2 (retroeclairage) et `reset_pin`
+# sur CH422G pin 3 (reset ecran). ESPHome refuse toute redeclaration de ces
+# pins ("Pin N is used in multiple places") : on ne declare donc PAS de
+# `switch` de retroeclairage ici.
+#
+# Le retroeclairage est pilotable via l'attribut `enable_pin` du display.
+# Un `switch` dedie ne pourra etre ajoute qu'apres avoir retire ces pins du
+# modele, ce qui suppose de ne plus utiliser le modele predefini.
+
+# ---------------------------------------------------------------------------
+# Audio : capture micro ES7210 -> Home Assistant (Assist).
+# I2S : MCLK GPIO6, SCLK GPIO44, LRCK GPIO16, ASDOUT GPIO43 (entree).
+# ---------------------------------------------------------------------------
+i2s_audio:
+  - id: i2s_bus
+    i2s_lrclk_pin: GPIO16
+    i2s_bclk_pin: GPIO44
+    i2s_mclk_pin: GPIO6
+
+audio_adc:
+  - platform: es7210
+    id: es7210_adc
+    bits_per_sample: 16bit
+    sample_rate: 16000
+    mic_gain: 24dB
+
+microphone:
+  - platform: i2s_audio
+    id: mic_es7210
+    i2s_audio_id: i2s_bus
+    i2s_din_pin: GPIO43
+    adc_type: external
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: left
+
+voice_assistant:
+  id: va
+  microphone:
+    - microphone: mic_es7210
+      channels: [0]
+  use_wake_word: false
+  noise_suppression_level: 0
+  auto_gain: 0dBFS
+  conversation_timeout: 30s
+
+  on_client_connected:
+    - logger.log: "Assist: client HA connecte"
+  on_client_disconnected:
+    - logger.log: "Assist: client HA deconnecte"
+  on_listening:
+    - logger.log: "Assist: ecoute en cours"
+  on_stt_end:
+    - logger.log:
+        format: "Assist STT: %s"
+        args: ['x']
+  on_error:
+    - logger.log:
+        format: "Assist erreur: %s / %s"
+        args: ['code', 'message']
+  on_end:
+    - logger.log: "Assist: fin de conversation"

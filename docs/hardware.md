@@ -2,21 +2,40 @@
 
 ## Carte de référence
 
-**Waveshare ESP32-S3-LCD-0.85**, variante **33877 sans batterie** (33878 avec batterie).
+**Waveshare ESP32-S3-Touch-LCD-4.3C**, SKU **33799** (sans boîtier) ou
+**33630** (avec boîtier plastique).
 
-Caractéristiques publiées par le fabricant : ESP32-S3-PICO-1-N8R8 (8 Mo flash / 8 Mo PSRAM), écran IPS 0,85″ 128×128 (GC9107, SPI), **deux microphones**, codecs ES7210 / ES8311, **8 LEDs WS2812 RGB**, ports d'extension I²C/UART, USB-C, boutons PLUS, BOOT et PWR (ce dernier commande l'alimentation et ne doit pas être assimilé sans test à un bouton applicatif ordinaire).
+Caractéristiques publiées par le fabricant : ESP32-S3-WROOM-1-**N16R8**
+(16 Mo flash / 8 Mo PSRAM), écran tactile capacitif **800×480** (RGB 16 bits,
+contrôleur **GT911** 5 points), codec **ES8311** (DAC) et **ES7210** (ADC
+micro 4 canaux), ampli **NS4150**, horloge **PCF85063**, expander I²C
+**CH422G**, entrées/sorties **DI/DO isolées**, emplacement TF, USB-C, boutons
+BOOT et RST.
 
-Source : https://www.waveshare.com/product/esp32-s3-lcd-0.85.htm
-Doc : https://docs.waveshare.com/ESP32-S3-LCD-0.85
-Schéma : https://docs.waveshare.com/ESP32-S3-LCD-0.85/Resources-And-Documents
+Source : https://www.waveshare.com/product/esp32-s3-touch-lcd-4.3c.htm
+Doc : https://docs.waveshare.com/ESP32-S3-Touch-LCD-4.3C
+Code et schémas : https://github.com/waveshareteam/ESP32-S3-Touch-LCD-4.3C
+Schéma : `hardware/schematics/ESP32-S3-Touch-LCD-4.3C-Schematics.pdf` (rev. V1.1)
 
-**Attention :** la présence de codecs et microphones ne prouve pas que leur pilote ESPHome fonctionne immédiatement. Vérifier aussi le support du GC9107, des WS2812, des boutons et la révision de la carte avant d'assigner les GPIO.
+Le tableau GPIO complet et sourcé est dans [gpio-43c.md](gpio-43c.md).
+
+**Prototype historique.** La **ESP32-S3-LCD-0.85** (SKU 33878 =
+ESP32-S3-LCD-0.85, SKU 33877 = ESP32-S3-LCD-0.85-**EN**) a servi de PoC
+firmware : son code est maintenu sur `feature/issue-1-esphome-bringup`
+(PR #8, draft). *Note : une version antérieure de ce document affirmait
+« SKU 33877 sans batterie » ; c'est erroné, la fiche officielle ne distingue
+que le suffixe `-EN`.* Elle n'est plus la carte V1.
+
+**Attention :** la présence de codecs et microphones ne prouve pas que leur
+pilote ESPHome fonctionne immédiatement. Vérifier aussi le support du
+tactile GT911, du CH422G, des entrées/sorties isolées et la révision de la
+carte avant d'assigner les GPIO.
 
 ## Liste V1
 
 | Référence | Qté | Interface | Statut |
 | --- | ---: | --- | --- |
-| Waveshare ESP32-S3-LCD-0.85, SKU 33877 | 1 | USB-C / GPIO internes | Choisie, intégration firmware à valider |
+| Waveshare ESP32-S3-Touch-LCD-4.3C, SKU 33799 | 1 | USB-C / GPIO internes | Choisie, intégration firmware à valider |
 | HLK-LD2410C radar présence | 1 | UART | Choisi, tension d'alimentation à vérifier avant branchement |
 | SHT40 (température + humidité) sur module | 1 | I²C, 3,3 V suivant breakout | Choisi |
 | Chargeur USB-C et câble données | 1 | USB-C | Réutiliser existant si adapté |
@@ -28,11 +47,13 @@ Options **différées** : BH1750 luminosité (I²C), SCD40 CO₂ (I²C), IR. Pas
 
 1. **Alimentation radar** : LD2410C doit recevoir une tension conforme à sa fiche technique (habituellement 5 V) ; ne pas supposer que la carte fournit 5 V sur ses pads d'extension. Vérifier le schéma et prévoir si besoin une dérivation du 5 V USB.
 2. **Niveaux logiques** : vérifier les tensions UART du LD2410C et du contrôleur ESP32-S3 (3,3 V). Aucune broche ESP ne doit recevoir du 5 V logique.
-3. **Brochage exact** : faire un tableau GPIO extrait du schéma officiel de la variante achetée ; contrôler les collisions entre I²C, UART, audio I²S, LCD, LEDs et boutons.
-4. **Thermique** : éloigner le SHT40 de l'ESP32, de l'écran, de l'alimentation et d'un éventuel chargeur ; prévoir une entrée d'air non chauffée.
-5. **Radar** : façade non métallique adaptée, orientation/positionnement et absence de vibrations ; tester les fausses détections.
-6. **Acoustique** : ouvertures face aux micros, espacement vis-à-vis des LEDs/écran et absence de son parasite.
-7. **Fiabilité** : alimentation permanente USB-C, pas de batterie pour la V1.
+3. **Brochage exact** : le tableau GPIO est extrait du schéma officiel de la variante achetée (voir [gpio-43c.md](gpio-43c.md)) ; les collisions entre I²C, UART, audio I²S, RGB et CH422G sont contrôlées.
+4. **Alimentation de l'écran** : l'écran 800×480 consomme ~550 mA. Le schéma de la 4.3C prévoit une alimentation 5 V dédiée (`DC_5V`, TMI3112H) et un convertisseur 5 V (SY8293FCC) avec un sélecteur de source (`PWR`). Le schéma signale que la sortie USB d'un PC peut être insuffisante (< 500 mA). Vérifier l'alimentation **avant** de conclure à un défaut d'affichage ou de tactile.
+5. **Niveaux logiques** : vérifier les tensions UART du LD2410C et du contrôleur ESP32-S3 (3,3 V). Aucune broche ESP ne doit recevoir du 5 V logique.
+6. **Thermique** : éloigner le SHT40 de l'ESP32, de l'écran, de l'alimentation et d'un éventuel chargeur ; prévoir une entrée d'air non chauffée.
+7. **Radar** : façade non métallique adaptée, orientation/positionnement et absence de vibrations ; tester les fausses détections.
+8. **Acoustique** : ouvertures face au micro de l'ES7210, espacement vis-à-vis des haut-parleurs et de l'écran, absence de son parasite.
+9. **Fiabilité** : alimentation permanente USB-C, pas de batterie pour la V1.
 
 ## Achat
 
