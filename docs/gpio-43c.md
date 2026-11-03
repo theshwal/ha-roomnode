@@ -53,10 +53,23 @@ préfabriqué reproduit exactement le câblage du schéma officiel Waveshare.
 | SDA | `CTP_SDA` / `D_SDA` | GPIO8 |
 | SCL | `CTP_SCL` / `D_SCL` | GPIO9 |
 | IRQ | `CTP_IRQ` | GPIO4 |
-| Reset | `CTP_RST` | **CH422G pin 1** (EXIO1) |
+| Reset | `CTP_RST` | **CH422G pin 1** (EXIO1) — câblé dans le profil livré |
 
-Le GT911 est à l'adresse I²C `0x5D` (ESPHome `gt911`, par défaut). Il partage
-le bus I²C unique de la carte.
+Le GT911 est à l'adresse I²C `0x5D` (ESPHome `gt911`, par défaut ; l'adresse
+secondaire `0x14` est tentée en repli par le pilote). Il partage le bus I²C
+unique de la carte.
+
+**Pourquoi le reset est câblé :** le pilote `gt911` de ESPHome utilise le pin
+de reset pour **sélectionner l'adresse I²C** du contrôleur (l'IRQ est
+momentanément piloté en sortie pendant le reset). Sans ce reset, le GT911 peut
+démarrer sur `0x14` au lieu de `0x5D`, ce qui rend le scan I²C de la carte
+non déterministe. `CTP_RST` étant câblé sur EXIO1 = CH422G pin 1, qui est
+libre (le modèle `mipi_rgb` n'utilise les pins que 2 et 3), le reset est
+déclaré via l'expander.
+
+Note ESPHome : un `interrupt_pin` passant par un expander ne peut pas servir
+d'interruption matérielle — le pilote bascule en mode polling. Ici l'IRQ est
+un **GPIO direct (GPIO4)**, donc l'interruption matérielle reste active.
 
 ### Audio (ES7210 + ES8311 + NS4150)
 
@@ -94,7 +107,6 @@ Adresses I²C : ES7210 = `0x40`, ES8311 = `0x18`, GT911 = `0x5D`.
 | Tactile | 4 | aucune |
 | RGB écran | 0, 1, 2, 5, 7, 10, 14, 17, 18, 21, 38, 39, 40, 41, 42, 45, 46, 47, 48 | aucune |
 | CH422G | 1 (reset tactile), 2 (backlight), 3 (reset écran) | aucune |
-
 Le GPIO15 (`I2S_DSDIN`, TX vers l'ES8311) et GPIO11/12/13 (TF) restent libres
 car ces fonctions ne sont pas activées dans le profil livré.
 

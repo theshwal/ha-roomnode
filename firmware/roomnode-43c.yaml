@@ -17,7 +17,8 @@
 #    (esphome/components/mipi_rgb/models/waveshare.py) dont les data_pins,
 #    porches et pins de timing correspondent au schema ci-dessus.
 # 4. Composant ESPHome `ch422g` : l'expander I2C de la carte pilote le
-#    reset ecran (EXIO2 / ch422g pin 3) et le retroeclairage (EXIO2 / pin 2).
+#    reset ecran (EXIO2 / ch422g pin 3), le retroeclairage (EXIO2 / pin 2),
+#    le reset du tactile (EXIO1 / pin 1), le PA_CTRL (EXIO4) et le CS TF.
 # 5. Composant ESPHome `gt911` : controlleur tactile capacitif, I2C a 0x5D,
 #    IRQ sur GPIO4, reset via CH422G.
 #
@@ -35,7 +36,9 @@
 #
 #   TACTILE GT911
 #     SDA GPIO8    SCL GPIO9    IRQ GPIO4
-#     reset ecran : CH422G pin 3      retroeclairage : CH422G pin 2
+#     reset tactile : CH422G pin 1 (EXIO1)
+#     reset ecran   : CH422G pin 3 (EXIO2)      (par le modele mipi_rgb)
+#     retroeclairage: CH422G pin 2 (EXIO2)      (par le modele mipi_rgb)
 #
 #   AUDIO (ES7210 = ADC micro 4 canaux, ES8311 = DAC, NS4150 = ampli)
 #     I2S_MCLK   GPIO6
@@ -97,6 +100,13 @@ touchscreen:
     id: touch_43c
     display: lcd_43c
     interrupt_pin: GPIO4
+    # Reset du GT911 : net `CTP_RST` du schema officiel, cable sur
+    # EXIO1 = CH422G pin 1 (libre : le modele mipi_rgb utilise les pins 2 et 3).
+    # Sans ce reset, le GT911 peut demarrer sur son adresse secondaire
+    # (0x14) au lieu de 0x5D, ce qui rend le scan I2C aleatoire.
+    reset_pin:
+      ch422g: ch422g_hub
+      number: 1
     on_touch:
       - logger.log:
           format: "Touch x=%d y=%d"
