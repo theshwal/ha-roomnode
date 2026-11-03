@@ -41,6 +41,7 @@ Terminal domotique de pièce sous **ESPHome + Home Assistant** : écouter, mesur
 - [Matériel, interfaces et achats](docs/hardware.md)
 - [Tableau GPIO de la cible V1 4.3C](docs/gpio-43c.md)
 - [Installation, flash et plan de test 4.3C](docs/flash-43c.md)
+- [Capteurs SHT40 + LD2410C (issue #3)](docs/sensors-43c.md)
 - [Plan de validation](docs/validation.md)
 
 ## Firmware
@@ -49,6 +50,8 @@ Terminal domotique de pièce sous **ESPHome + Home Assistant** : écouter, mesur
 | --- | --- |
 | `firmware/roomnode-43c-common.yaml` | socle V1 : ESP32-S3 N16R8, esp-idf, Wi-Fi, API chiffrée, OTA, PSRAM octal |
 | `firmware/roomnode-43c.yaml` | cible V1 : I²C unique, CH422G, écran RGB 800×480, tactile GT911, micro ES7210 + `voice_assistant` |
+| `firmware/roomnode-43c-sensors.yaml` | package capteurs (issue #3) : SHT40 I²C + radar LD2410C UART |
+| `firmware/roomnode-43c-full.yaml` | profil complet V1 + capteurs |
 | `scripts/validate.sh` | validation statique + compilation, à valeurs fictices, sans secret |
 | `secrets.example.yaml` | modèle de secrets (valeurs factices) |
 

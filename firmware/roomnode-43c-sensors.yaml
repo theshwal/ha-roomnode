@@ -1,0 +1,103 @@
+# HA RoomNode — package capteurs externes (issue #3)
+#
+# Cible : Waveshare ESP32-S3-Touch-LCD-4.3C
+# Ajoute SHT40 (temperature + humidite) et radar LD2410C (presence).
+#
+# ------------------------------------------------------------------
+# SOURCES
+# ------------------------------------------------------------------
+# - Schéma officiel 4.3C rev. V1.1 (github.com/waveshareteam/ESP32-S3-Touch-LCD-4.3C)
+#   pour les GPIO disponibles et les rails d'alimentation.
+# - ESPHome `sht4x` : adresse I2C par defaut 0x44.
+# - ESPHome `ld2410` : UART 256000 bauds, 8N1, TX **et** RX obligatoires
+#   (contrainte `final_validate_device_schema` du composant).
+# - Fiche HLK-LD2410C : alimentation **5 V**, logique UART 3,3 V,
+#   consommation ~79 mA moyenne (pointe > 200 mA).
+#
+# ------------------------------------------------------------------
+# BROCHAGE
+# ------------------------------------------------------------------
+#   SHT40  : bus I2C de la carte (GPIO8 SDA / GPIO9 SCL), adresse 0x44
+#            -> aucun GPIO supplementaire, aucun conflit avec le
+#               GT911 / CH422G / ES7210 / ES8311 / RTC.
+#
+#   LD2410C : UART sur GPIO15 (TX ESP32 -> RX radar) et GPIO12 (RX ESP32
+#              <- TX radar).
+#              Ces deux GPIO sont libres sur la 4.3C : GPIO15 est le
+#              `I2S_DSDIN` (TX vers l'ES8311, non utilise en V1) et GPIO12
+#              est le SCK de la carte TF (non utilisee en V1).
+#
+#   ALIMENTATION DU RADAR : 5 V. La carte 4.3C dispose d'un rail 5 V
+#   (`DC_5V` / `VOUT_5V`) issu du convertisseur SY8293FCC, mais ce rail
+#   est dimensionne pour l'ecran (~550 mA) et l'alimentation depend du
+#   selecteur `PWR` (USB ou batterie). brancher le radar sur ce rail est
+#   possible mais partage la source avec l'ecran : a mesurer.
+#   NE JAMAIS alimenter le LD2410C par le rail 3,3 V de la carte
+#   (`Vout_3V3`) : le module exige 5 V (5 a 12 V). Un 3,3 V sous-alimente
+#   le radar et peut le faire rebooter en boucle.
+#
+#   Les signaux UART sont en logique 3,3 V des deux cotes : aucun
+#   convertisseur de niveau n'est necessaire entre l'ESP32-S3 (3,3 V) et
+#   le LD2410C (TX/RX en 3,3 V).
+#
+# ------------------------------------------------------------------
+# AUCUN HAUT-PARLEUR : le radar est un capteur de presence, il n'a aucun
+# impact sur la capture micro. Voir docs/gpio-43c.md pour le tableau GPIO
+# complet et le controle de collision.
+# ------------------------------------------------------------------
+
+uart:
+  - id: uart_radar
+    tx_pin: GPIO15
+    rx_pin: GPIO12
+    # Contrainte LD2410C : 256000 bauds, 8N1, parity NONE, stop_bits 1.
+    baud_rate: 256000
+    data_bits: 8
+    parity: NONE
+    stop_bits: 1
+    rx_buffer_size: 512
+
+ld2410:
+  id: radar_ld2410
+  uart_id: uart_radar
+
+binary_sensor:
+  - platform: ld2410
+    ld2410_id: radar_ld2410
+    has_target:
+      name: "RoomNode Presence"
+      device_class: presence
+    has_moving_target:
+      name: "RoomNode Moving Target"
+    has_still_target:
+      name: "RoomNode Still Target"
+
+sensor:
+  # --- SHT40 : temperature + humidite, bus I2C partage de la carte ---
+  - platform: sht4x
+    id: sht40_temp
+    i2c_id: bus_a
+    address: 0x44
+    temperature:
+      name: "RoomNode Temperature"
+      accuracy_decimals: 1
+    humidity:
+      name: "RoomNode Humidity"
+      accuracy_decimals: 1
+
+  # --- LD2410C : mesures du radar ---
+  - platform: ld2410
+    ld2410_id: radar_ld2410
+    detection_distance:
+      name: "RoomNode Radar Distance"
+      unit_of_measurement: "cm"
+    moving_distance:
+      name: "RoomNode Radar Moving Distance"
+      unit_of_measurement: "cm"
+    still_distance:
+      name: "RoomNode Radar Still Distance"
+      unit_of_measurement: "cm"
+    moving_energy:
+      name: "RoomNode Radar Move Energy"
+    still_energy:
+      name: "RoomNode Radar Still Energy"
