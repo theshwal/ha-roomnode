@@ -1,0 +1,51 @@
+# HA RoomNode — socle commun (package ESPHome)
+#
+# Cible V1 : Waveshare ESP32-S3-Touch-LCD-4.3C
+# Réf.    : https://docs.waveshare.com/ESP32-S3-Touch-LCD-4.3C
+#           https://github.com/waveshareteam/ESP32-S3-Touch-LCD-4.3C
+#
+# Ce package ne contient que la plateforme, la connectivité et l'OTA.
+# Il est partage par tous les profils de la cible V1.
+#
+# Secrets : ce dépôt ne contient AUCUN secret. Fournir le fichier de secrets
+# local (voir secrets.example.yaml). Les secrets sont resolus par rapport
+# au fichier qui les declare : ils sont donc declares ici.
+
+esphome:
+  name: roomnode
+  friendly_name: RoomNode
+  comment: "HA RoomNode — Waveshare ESP32-S3-Touch-LCD-4.3C"
+
+esp32:
+  board: esp32-s3-devkitc1-n16r8
+  variant: esp32s3
+  framework:
+    type: esp-idf
+    version: recommended
+  flash_size: 16MB
+
+# PSRAM 8 Mo octal : obligatoire pour le tampon d'affichage 800x480.
+psram:
+  mode: octal
+  speed: 80MHz
+
+logger:
+  level: INFO
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+  reboot_timeout: 15min
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "RoomNode-Setup"
+    password: !secret wifi_ap_password
+
+captive_portal:

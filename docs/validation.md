@@ -1,15 +1,62 @@
 # Validation et jalons
 
-**État actuel : préparation documentaire. Aucun essai physique ni compilation de la carte cible n'a été rapporté comme réussi.**
+**État actuel (2026-11-02) : firmware ESPHome de la cible V1 4.3C compilé et validé statiquement. Aucun essai physique n'a été réalisé — la carte n'a pas été flashée ni observée.**
+
+Ce document distingue trois niveaux, à ne pas confondre :
+
+| Niveau | Commande | Ce que ça prouve |
+| --- | --- | --- |
+| Schéma | `esphome config` | le YAML est valide et les broches sont libres |
+| Compilation | `esphome compile` | le C++ compile et linke pour ESP32-S3 (esp-idf) |
+| Essai physique | `esphome run` + `esphome logs` | le comportement réel sur la carte |
+
+Les deux premiers sont **couverts** par `scripts/validate.sh`. Le troisième
+**ne l'est pas**.
+
+## Preuves de compilation — cible V1 4.3C (2026-11-02)
+
+Environnement : ESPHome **2026.10.1**, framework `esp-idf` `recommended` résolu
+en **ESP-IDF 5.5.6**, cible `esp32s3`, `xtensa-esp32s3-elf-gcc` (GNU 14.2.0),
+Python 3.13.5, hôte Linux x86_64.
+
+Commande :
+
+```bash
+ESPHOME_COMPILE=1 scripts/validate.sh
+```
+
+Résultat : **exit code 0**.
+
+| Profil | Taille image | RAM (DIRAM) | Flash (part. app) |
+| --- | ---: | ---: | ---: |
+| `43c` (écran RGB 800×480 + GT911 + ES7210 + Assist) | 919 255 o | 110 219 o (32,3 %) | 11,3 % (8 126 464 o) |
+
+Artefacts produits : `firmware.factory.bin`, `firmware.ota.bin`, `firmware.elf`.
+
+Ce que ces chiffres **ne** prouvent pas : que le firmware démarre, que le
+PSRAM est détecté, que le bus I²C répond (GT911 `0x5D`, CH422G, ES7210
+`0x40`), que l'écran affiche quoi que ce soit, que le tactile réagit, ni que
+le micro capte un signal exploitable. Ces points exigent la carte physique.
+
+### Portée de la CI
+
+La CI GitHub (`.github/workflows/validate-firmware.yml`) lance
+`scripts/validate.sh` **sans** `ESPHOME_COMPILE=1` : elle valide donc le
+**schéma** des configurations.
+
+Elle **ne compile pas** le firmware. Les tableaux de tailles ci-dessus sont
+des **preuves de compilation locales**, obtenues sur la machine de
+développement, et ne sont pas des artefacts CI.
 
 ## J0 — Compatibilité carte, sans capteurs
 
-- [ ] Vérifier SKU et révision exacte de la carte
-- [ ] Extraire brochage et schéma officiel de cette révision
-- [ ] Compiler et téléverser un firmware ESPHome minimal ; connexion API sécurisée à Home Assistant
-- [ ] Afficher un état stable sur le LCD GC9107
-- [ ] Piloter les LEDs WS2812 ; identifier le bouton applicatif sûr
-- [ ] Valider pilote ES7210 / I²S et capture audio
+- [x] Vérifier SKU et révision exacte de la carte — SKU 33799 (sans boîtier) / 33630 (avec boîtier), schéma rev. V1.1
+- [x] Extraire brochage et schéma officiel de cette révision — [gpio-43c.md](gpio-43c.md)
+- [x] Firmware ESPHome minimal (socle + écran + tactile + micro) **compilé**
+- [ ] Compiler et téléverser le firmware ; connexion API sécurisée à Home Assistant
+- [ ] Afficher un état stable sur l'écran RGB 800×480
+- [ ] Vérifier le tactile GT911 (5 points)
+- [ ] Valider le pilote ES7210 / I²S et la capture audio
 
 **Blocage :** si les micros ne fonctionnent pas avec ESPHome sans développement disproportionné, réexaminer la carte ou le pilote avant d'acheter d'autres unités.
 
@@ -37,7 +84,6 @@
 - [ ] Bouton action courte / longue ; pas de réaffectation risquée de PWR/BOOT
 - [ ] Commande déterministe d'un équipement HA et affichage de confirmation
 - [ ] Comportement dégradé HA / Amazon / réseau
-
 ## J4 — Réplication
 
 - [ ] Configuration commune + paramètres par pièce
