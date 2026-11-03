@@ -62,6 +62,7 @@ FAKE_API_KEY="Wm9zbk5vZGVWYWxpZGF0aW9uS2V5MDAwMDAwMDAwMDA="
 # Profils testes : <nom de profil>:<fichier yaml de reference>
 PROFILES=(
   "43c:roomnode-43c.yaml"
+  "43c-ui:roomnode-43c-ui.yaml"
 )
 
 status=0

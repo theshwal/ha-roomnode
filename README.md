@@ -49,6 +49,8 @@ Terminal domotique de pièce sous **ESPHome + Home Assistant** : écouter, mesur
 | --- | --- |
 | `firmware/roomnode-43c-common.yaml` | socle V1 : ESP32-S3 N16R8, esp-idf, Wi-Fi, API chiffrée, OTA, PSRAM octal |
 | `firmware/roomnode-43c.yaml` | cible V1 : I²C unique, CH422G, écran RGB 800×480, tactile GT911, micro ES7210 + `voice_assistant` |
+| `firmware/roomnode-43c-lvgl.yaml` | package interface tactile LVGL (issue #4) |
+| `firmware/roomnode-43c-ui.yaml` | profil V1 + interface LVGL |
 | `scripts/validate.sh` | validation statique + compilation, à valeurs fictices, sans secret |
 | `secrets.example.yaml` | modèle de secrets (valeurs factices) |
 

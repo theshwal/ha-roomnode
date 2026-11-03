@@ -1,0 +1,546 @@
+# HA RoomNode — interface tactile LVGL de pièce (issue #4)
+#
+# Cible : Waveshare ESP32-S3-Touch-LCD-4.3C
+# Base  : firmware/roomnode-43c.yaml (ecran RGB 800x480 + tactile GT911)
+#
+# OBJECTIF : un terminal de piece utile meme sans commande vocale, avec des
+# controles DETERMINISTES (l'agent vocal reste optionnel).
+#
+# ------------------------------------------------------------------
+# CONTENU
+# ------------------------------------------------------------------
+# Page 1 — "Piece" : etat micro/Assist, heure, temperature, humidite,
+#   presence, et 3 commandes directes d'equipements HA (lumieres, volets,
+#   chauffage). Ces commandes passent par des entites `switch` ESPHome,
+#   donc par des appels Home Assistant standards, pas par l'agent vocal.
+#
+# Page 2 — "Diagnostics" : etat HA, Wi-Fi, etats de la chaine audio, plus
+#   un bouton de coupure micro (mute), qui coupe l'ecoute sans arreter la
+#   conversation en cours.
+#
+# ------------------------------------------------------------------
+# DETERMINISME ET BUDGET
+# ------------------------------------------------------------------
+# - Aucune action de l'agent vocal dans l'interface : tout est declenche par
+#   le tactile ou par un evenement d'entite HA.
+# - Les libelles d'etat sont mis a jour par `lvgl.widget.update` a partir
+#   de variables globales ESPHome : pas de requete HTTP depuis l'ecran.
+# - `lvgl.update_interval` a 1 s : le rafraichissement de l'interface ne
+#   depend pas du passage de la voix.
+# - L'ecran est en `auto_clear_enabled: false` + `update_interval: never`
+#   (deja dans le profil V1) : LVGL pilote le rafraichissement.
+#
+# ------------------------------------------------------------------
+# AUCUN CONFLIT GPIO / I2C
+# ------------------------------------------------------------------
+# L'interface ne consomme aucun GPIO supplementaire : elle reutilise l'ecran
+# RGB et le tactile GT911 du profil V1. Voir docs/gpio-43c.md.
+#
+# AUCUN HAUT-PARLEUR : le mute micro coupe l'ecoute (`microphone.mute`), pas
+# la lecture. L'ES8311 et le NS4150 restent desactives.
+
+globals:
+  - id: lvgl_state
+    type: std::string
+    restore_value: no
+    initial_value: '"hors ligne"'
+  - id: lvgl_room_temp
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+  - id: lvgl_room_hum
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+  - id: lvgl_presence
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: lvgl_mic_muted
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: lvgl_wifi_db
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: lvgl_ha_connected
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: lvgl_ip
+    type: std::string
+    restore_value: no
+    initial_value: '"--"'
+
+# ---------------------------------------------------------------------------
+# Etat de la chaine vocale, pour l'indicateur "Voix" de l'interface.
+#
+# Ce bloc est declaratif : il se fusionne avec celui du profil V1 (meme
+# composant `voice_assistant`, meme identifiant `va`). L'interface ne
+# declenche jamais la voix : elle ne fait que lire l'etat.
+#
+# La presence et la temperature/humidite restent a zero tant que le package
+# capteurs (issue #3) n'est pas inclus : ce profil est volontairement
+# autonome et sans capteur externe.
+# ---------------------------------------------------------------------------
+voice_assistant:
+  id: va
+  on_client_connected:
+    - globals.set:
+        id: lvgl_state
+        value: '"pret"'
+    - globals.set:
+        id: lvgl_ha_connected
+        value: 'true'
+  on_client_disconnected:
+    - globals.set:
+        id: lvgl_state
+        value: '"hors ligne"'
+    - globals.set:
+        id: lvgl_ha_connected
+        value: 'false'
+  on_listening:
+    - globals.set:
+        id: lvgl_state
+        value: '"ecoute"'
+  on_end:
+    - globals.set:
+        id: lvgl_state
+        value: '"pret"'
+  on_error:
+    - globals.set:
+        id: lvgl_state
+        value: '"erreur"'
+
+# ---------------------------------------------------------------------------
+# Entites HA deterministes pilotees par l'interface tactile.
+# Ce sont des `switch` ESPHome : Home Assistant les pilote, l'ecran ne fait
+# que les actionner. Aucun appel a un agent vocal.
+# ---------------------------------------------------------------------------
+switch:
+  - platform: template
+    id: sw_light
+    name: "RoomNode Light"
+    icon: "mdi:lightbulb"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - logger.log: "LVGL: light on"
+    on_turn_off:
+      - logger.log: "LVGL: light off"
+
+  - platform: template
+    id: sw_blind
+    name: "RoomNode Blind"
+    icon: "mdi:blinds"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - logger.log: "LVGL: blind on"
+    on_turn_off:
+      - logger.log: "LVGL: blind off"
+
+  - platform: template
+    id: sw_heater
+    name: "RoomNode Heater"
+    icon: "mdi:radiator"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - logger.log: "LVGL: heater on"
+    on_turn_off:
+      - logger.log: "LVGL: heater off"
+
+  # Mute micro : coupure de l'ecoute sans arreter l'echantillonnage.
+  - platform: template
+    id: sw_mic_mute
+    name: "RoomNode Mic Mute"
+    icon: "mdi:microphone-off"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - microphone.mute:
+          id: mic_es7210
+      - globals.set:
+          id: lvgl_mic_muted
+          value: 'true'
+    on_turn_off:
+      - microphone.unmute:
+          id: mic_es7210
+      - globals.set:
+          id: lvgl_mic_muted
+          value: 'false'
+
+# ---------------------------------------------------------------------------
+# LVGL
+# ---------------------------------------------------------------------------
+lvgl:
+  displays:
+    - lcd_43c
+  default_font: montserrat_20
+  update_interval: 1s
+  buffer_size: 25%
+  style_definitions:
+    - id: style_card
+      bg_color: 0x1E2430
+      bg_opa: cover
+      border_color: 0x3A4557
+      border_width: 1
+      radius: 12
+      pad_all: 10
+    - id: style_title
+      text_color: 0xE6EDF7
+    - id: style_value
+      text_color: 0x7FD1AE
+    - id: style_dim
+      text_color: 0x8A94A6
+    - id: style_warn
+      text_color: 0xE2A03F
+
+  pages:
+    # ---------------- Page 1 : Piece ----------------
+    - id: page_room
+      widgets:
+        - obj:
+            align: top_mid
+            width: 100%
+            height: 100%
+            bg_color: 0x11151C
+            bg_opa: cover
+            border_width: 0
+            pad_all: 14
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: start
+              flex_align_cross: stretch
+            widgets:
+              # --- bandeau etat ---
+              - obj:
+                  id: box_status
+                  height: 64
+                  width: 100%
+                  bg_color: 0x1E2430
+                  bg_opa: cover
+                  border_color: 0x3A4557
+                  border_width: 1
+                  radius: 12
+                  pad_all: 8
+                  layout:
+                    type: flex
+                    flex_flow: row
+                    flex_align_main: space_between
+                    flex_align_cross: center
+                  widgets:
+                    - label:
+                        id: lbl_voice_state
+                        text: "Voix : --"
+                        text_font: montserrat_20
+                        text_color: 0xE6EDF7
+                    - label:
+                        id: lbl_clock
+                        text: "--:--"
+                        text_font: montserrat_28
+                        text_color: 0x7FD1AE
+
+              # --- mesures ---
+              - obj:
+                  id: box_measures
+                  height: 110
+                  width: 100%
+                  bg_color: 0x1E2430
+                  bg_opa: cover
+                  border_color: 0x3A4557
+                  border_width: 1
+                  radius: 12
+                  pad_all: 8
+                  layout:
+                    type: flex
+                    flex_flow: row
+                    flex_align_main: space_evenly
+                    flex_align_cross: center
+                  widgets:
+                    - label:
+                        id: lbl_temp
+                        text: "--.- C"
+                        text_font: montserrat_28
+                        text_color: 0x7FD1AE
+                    - label:
+                        id: lbl_hum
+                        text: "--.- %"
+                        text_font: montserrat_28
+                        text_color: 0x7FD1AE
+                    - label:
+                        id: lbl_presence
+                        text: "Presence : --"
+                        text_font: montserrat_20
+                        text_color: 0xE6EDF7
+
+              # --- commandes deterministes ---
+              - obj:
+                  id: box_actions
+                  height: 120
+                  width: 100%
+                  bg_color: 0x1E2430
+                  bg_opa: cover
+                  border_color: 0x3A4557
+                  border_width: 1
+                  radius: 12
+                  pad_all: 8
+                  layout:
+                    type: flex
+                    flex_flow: row
+                    flex_align_main: space_evenly
+                    flex_align_cross: center
+                  widgets:
+                    - button:
+                        id: btn_light
+                        width: 150
+                        height: 80
+                        radius: 10
+                        bg_color: 0x2B3446
+                        text_color: 0xE6EDF7
+                        on_click:
+                          - switch.toggle: sw_light
+                        widgets:
+                          - label:
+                              text: "Lumiere"
+                              text_font: montserrat_20
+                              text_color: 0xE6EDF7
+                              align: center
+                    - button:
+                        id: btn_blind
+                        width: 150
+                        height: 80
+                        radius: 10
+                        bg_color: 0x2B3446
+                        text_color: 0xE6EDF7
+                        on_click:
+                          - switch.toggle: sw_blind
+                        widgets:
+                          - label:
+                              text: "Volet"
+                              text_font: montserrat_20
+                              text_color: 0xE6EDF7
+                              align: center
+                    - button:
+                        id: btn_heater
+                        width: 150
+                        height: 80
+                        radius: 10
+                        bg_color: 0x2B3446
+                        text_color: 0xE6EDF7
+                        on_click:
+                          - switch.toggle: sw_heater
+                        widgets:
+                          - label:
+                              text: "Chauffage"
+                              text_font: montserrat_20
+                              text_color: 0xE6EDF7
+                              align: center
+
+              # --- pied de page : lien vers diagnostics ---
+              - button:
+                  id: btn_to_diag
+                  width: 100%
+                  height: 56
+                  radius: 10
+                  bg_color: 0x1E2430
+                  text_color: 0x8A94A6
+                  on_click:
+                    - lvgl.page.next:
+                        animation: MOVE_LEFT
+                        time: 200ms
+                  widgets:
+                    - label:
+                        text: "Diagnostics"
+                        text_font: montserrat_20
+                        text_color: 0x8A94A6
+                        align: center
+
+    # ---------------- Page 2 : Diagnostics ----------------
+    - id: page_diag
+      widgets:
+        - obj:
+            align: top_mid
+            width: 100%
+            height: 100%
+            bg_color: 0x11151C
+            bg_opa: cover
+            border_width: 0
+            pad_all: 14
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: start
+              flex_align_cross: stretch
+            widgets:
+              - label:
+                  text: "Diagnostics"
+                  text_font: montserrat_28
+                  text_color: 0xE6EDF7
+              - obj:
+                  id: box_diag
+                  height: 220
+                  width: 100%
+                  bg_color: 0x1E2430
+                  bg_opa: cover
+                  border_color: 0x3A4557
+                  border_width: 1
+                  radius: 12
+                  pad_all: 10
+                  layout:
+                    type: flex
+                    flex_flow: column
+                    flex_align_main: start
+                    flex_align_cross: start
+                  widgets:
+                    - label:
+                        id: lbl_wifi
+                        text: "Wi-Fi : --"
+                        text_font: montserrat_20
+                        text_color: 0xE6EDF7
+                    - label:
+                        id: lbl_ha
+                        text: "Home Assistant : --"
+                        text_font: montserrat_20
+                        text_color: 0xE6EDF7
+                    - label:
+                        id: lbl_mic
+                        text: "Micro : --"
+                        text_font: montserrat_20
+                        text_color: 0xE6EDF7
+                    - label:
+                        id: lbl_psram
+                        text: "PSRAM : --"
+                        text_font: montserrat_20
+                        text_color: 0xE6EDF7
+                    - label:
+                        id: lbl_ip
+                        text: "Adresse : --"
+                        text_font: montserrat_20
+                        text_color: 0x8A94A6
+
+              - obj:
+                  height: 70
+                  width: 100%
+                  widgets:
+                    - button:
+                        id: btn_mute
+                        width: 100%
+                        height: 60
+                        radius: 10
+                        bg_color: 0x2B3446
+                        text_color: 0xE2A03F
+                        on_click:
+                          - switch.toggle: sw_mic_mute
+                        widgets:
+                          - label:
+                              id: lbl_mute
+                              text: "Micro : actif"
+                              text_font: montserrat_20
+                              text_color: 0xE2A03F
+                              align: center
+
+              - button:
+                  id: btn_to_room
+                  width: 100%
+                  height: 56
+                  radius: 10
+                  bg_color: 0x1E2430
+                  text_color: 0x8A94A6
+                  on_click:
+                    - lvgl.page.previous:
+                        animation: MOVE_RIGHT
+                        time: 200ms
+                  widgets:
+                    - label:
+                        text: "Retour"
+                        text_font: montserrat_20
+                        text_color: 0x8A94A6
+                        align: center
+
+# ---------------------------------------------------------------------------
+# Mise a jour de l'interface.
+#
+# Les libelles sont recalcules a partir de variables globales ESPHome, jamais
+# par une requete HTTP depuis l'ecran. Le cycle estpilote par `lvgl.update`
+# (1 s), donc independant du passage de la voix.
+#
+# L'etat de la chaine vocale (ecoute / pret / hors ligne / erreur) est
+# alimente par le bloc `voice_assistant:` du profil V1, qui ecrit dans les
+# memes variables globales. L'interface ne declenche jamais la voix.
+# ---------------------------------------------------------------------------
+interval:
+  - interval: 2s
+    then:
+      - lvgl.label.update:
+          id: lbl_voice_state
+          text:
+            format: "Voix : %s"
+            args: ['(id(lvgl_state))']
+      - lvgl.label.update:
+          id: lbl_temp
+          text:
+            format: "%.1f C"
+            args: ['(id(lvgl_room_temp))']
+      - lvgl.label.update:
+          id: lbl_hum
+          text:
+            format: "%.0f %%"
+            args: ['(id(lvgl_room_hum))']
+      - lvgl.label.update:
+          id: lbl_presence
+          text:
+            format: "Presence : %s"
+            args: ['(id(lvgl_presence)) ? "oui" : "non"']
+      - lvgl.label.update:
+          id: lbl_mute
+          text:
+            format: "Micro : %s"
+            args: ['(id(lvgl_mic_muted)) ? "coupe" : "actif"']
+      - lvgl.label.update:
+          id: lbl_wifi
+          text:
+            format: "Wi-Fi : %s"
+            args: ['(id(lvgl_wifi_db)) ? "connecte" : "deconnecte"']
+      - lvgl.label.update:
+          id: lbl_ha
+          text:
+            format: "Home Assistant : %s"
+            args: ['(id(lvgl_ha_connected)) ? "connecte" : "absent"']
+      - lvgl.label.update:
+          id: lbl_ip
+          text:
+            format: "Adresse : %s"
+            args: ['(id(lvgl_ip))']
+
+# Etat reseau et adresse IP, pour la page diagnostics.
+# `wifi.on_connect` / `wifi.on_disconnect` sont les declencheurs reellement
+# exposes par le composant `wifi`.
+#
+# L'adresse IP est lue via `network::get_ip_addresses()`, seule API portable
+# entre les frameworks Arduino et esp-idf. Le niveau de signal Wi-Fi n'est pas
+# expose de facon portable sous esp-idf : l'interface affiche un etat de
+# connexion plutot qu'un dBm.
+wifi:
+  on_connect:
+    - globals.set:
+        id: lvgl_ip
+        value: !lambda |-
+          char buf[46];
+          for (auto &ip : network::get_ip_addresses()) {
+            return std::string(ip.str_to(buf));
+          }
+          return std::string("--");
+    - globals.set:
+        id: lvgl_wifi_db
+        value: '1'
+  on_disconnect:
+    - globals.set:
+        id: lvgl_ip
+        value: '"--"'
+    - globals.set:
+        id: lvgl_wifi_db
+        value: '0'
