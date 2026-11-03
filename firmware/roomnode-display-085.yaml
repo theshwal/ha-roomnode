@@ -1,0 +1,124 @@
+# HA RoomNode — package affichage 0,85″ (GC9107)
+#
+# Ce package est ISOLÉ et REMPLAÇABLE : il ne contient que le bus SPI et
+# l'écran. Le profil voix (`roomnode-voice.yaml`) ne l'inclut pas, afin que
+# la partie vocale reste indépendante de tout choix d'écran.
+#
+# Pour changer d'écran (1,85″, 2,8″, ...) :
+#   1. créer un nouveau package, ex. `roomnode-display-185.yaml` ;
+#   2. le référencer depuis le profil concerné via `packages:`.
+# Ne pas modifier `roomnode-common.yaml` ni `roomnode-voice.yaml`.
+#
+# Cible : Waveshare ESP32-S3-LCD-0.85, écran 0,85″ 128×128, contrôleur GC9107.
+# Sources :
+#   - schéma : waveshareteam/ESP32-S3-LCD-0.85
+#     hardware/schematics/ESP32-S3-LCD-0.85-Schematics.pdf
+#   - brochage écran : .../components/esp_bsp/bsp_display.h (SPI2_HOST)
+#   - séquence d'init : .../libraries/GFX_Library_for_Arduino/src/display/
+#     Arduino_GC9107.h (GC9107_init_operations)
+#   - modèle ESPHome : `mipi_spi` → `GC9107` (dérivé ST7789V)
+#
+# ------------------------------------------------------------------
+# BROCHAGE (tableau GPIO complet : docs/gpio.md)
+# ------------------------------------------------------------------
+#   IO21  LCD_CS   -> cs_pin
+#   IO38  LCD_CLK  -> clk_pin   (SCLK)
+#   IO39  LCD_DIN  -> mosi_pin  (MOSI)
+#   IO40  LCD_RST  -> reset_pin
+#   IO45  LCD_DC   -> dc_pin
+#   IO46  LCD_BL   -> enable_pin (rétroéclairage)
+#
+# Le contrôleur GC9107 n'a pas de ligne MISO : le bus SPI est unidirectionnel.
+
+spi:
+  - id: spi_lcd
+    clk_pin: GPIO38
+    mosi_pin: GPIO39
+
+display:
+  - platform: mipi_spi
+    id: lcd_085
+    model: GC9107
+    spi_id: spi_lcd
+    cs_pin: GPIO21
+    dc_pin: GPIO45
+    reset_pin: GPIO40
+    enable_pin: GPIO46
+    # Le GC9107 est câblé en 4 fils, SPI mode 0 (CPOL=0, CPHA=0), MSB first.
+    spi_mode: MODE0
+    data_rate: 40MHz
+    color_order: BGR
+    invert_colors: true
+    dimensions:
+      width: 128
+      height: 128
+    # Séquence d'initialisation du GC9107 d'après la bibliothèque
+    # Arduino_GFX utilisée par la démo officielle Waveshare.
+    # 0x3A (PIXFMT) est absent : ESPHome l'écrit lui-même selon
+    # `pixel_mode` (16bit -> 0x55, équivalent du 0x05 de la démo).
+    init_sequence:
+      - [0xEF, 0xEB, 0x14]
+      - [0xFE]
+      - [0xEF, 0xEB, 0x14]
+      - [0x84, 0x40]
+      - [0x85, 0xFF]
+      - [0x86, 0xFF]
+      - [0x87, 0xFF]
+      - [0x88, 0x0A]
+      - [0x89, 0x21]
+      - [0x8A, 0x00]
+      - [0x8B, 0x80]
+      - [0x8C, 0x01]
+      - [0x8D, 0x01]
+      - [0x8E, 0xFF]
+      - [0x8F, 0xFF]
+      - [0xB6, 0x00, 0x20]
+      - [0x90, 0x08, 0x08, 0x08, 0x08]
+      - [0xBD, 0x06]
+      - [0xBC, 0x00]
+      - [0xFF, 0x60, 0x01, 0x04]
+      - [0xC3, 0x13]
+      - [0xC4, 0x13]
+      - [0xC9, 0x22]
+      - [0xBE, 0x11]
+      - [0xE1, 0x10, 0x0E]
+      - [0xDF, 0x21, 0x0C, 0x02]
+      - [0xF0, 0x45, 0x09, 0x08, 0x08, 0x26, 0x2A]
+      - [0xF1, 0x43, 0x70, 0x72, 0x36, 0x37, 0x6F]
+      - [0xF2, 0x45, 0x09, 0x08, 0x08, 0x26, 0x2A]
+      - [0xF3, 0x43, 0x70, 0x72, 0x36, 0x37, 0x6F]
+      - [0xED, 0x1B, 0x0B]
+      - [0xAE, 0x77]
+      - [0xCD, 0x63]
+      - [0x70, 0x07, 0x07, 0x04, 0x0E, 0x0F, 0x09, 0x07, 0x08, 0x03]
+      - [0xE8, 0x34]
+      - [0x62, 0x18, 0x0D, 0x71, 0xED, 0x70, 0x70, 0x18, 0x0F, 0x71, 0xEF, 0x70, 0x70]
+      - [0x63, 0x18, 0x11, 0x71, 0xF1, 0x70, 0x70, 0x18, 0x13, 0x71, 0xF3, 0x70, 0x70]
+      - [0x64, 0x28, 0x29, 0xF1, 0x01, 0xF1, 0x00, 0x07]
+      - [0x66, 0x3C, 0x00, 0xCD, 0x67, 0x45, 0x45, 0x10, 0x00, 0x00, 0x00]
+      - [0x67, 0x00, 0x3C, 0x00, 0x00, 0x00, 0x01, 0x54, 0x10, 0x32, 0x98]
+      - [0x74, 0x10, 0x85, 0x80, 0x00, 0x00, 0x4E, 0x00]
+      - [0x98, 0x3E, 0x07]
+      - [0x35]
+      - [0x21]
+      - [0x11]
+      - delay 120ms
+      - [0x29]
+      - delay 20ms
+    # Pas de police ni de lambda ici : l'affichage 0,85" reste un bloc
+    # remplaçable, et le rendu de texte n'est pas l'objet de l'issue #1.
+    # Ajouter `font:` + `lambda:` dans ce package quand un écran définitif
+    # est choisi (voir docs/flash.md § 9).
+
+# 8 LEDs WS2812 RGB sur IO48 (d'après le schéma et bsp_led.h du BSP officiel).
+# Sous ESP-IDF, ESPHome impose `esp32_rmt_led_strip` (le composant
+# `neopixelbus` avec `method: esp32_rmt` est réservé au framework Arduino).
+light:
+  - platform: esp32_rmt_led_strip
+    id: leds_ring
+    name: "RoomNode LEDs"
+    pin: GPIO48
+    num_leds: 8
+    chipset: WS2812
+    channel_colors: GRB
+    restore_mode: ALWAYS_OFF

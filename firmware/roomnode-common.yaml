@@ -1,0 +1,82 @@
+# HA RoomNode — socle commun (package ESPHome)
+#
+# Cible : Waveshare ESP32-S3-LCD-0.85 (ESP32-S3-PICO-1-N8R8, 8 Mo flash / 8 Mo PSRAM)
+# Réf. schéma : https://github.com/waveshareteam/ESP32-S3-LCD-0.85
+#              hardware/schematics/ESP32-S3-LCD-0.85-Schematics.pdf
+#
+# Ce fichier contient uniquement le socle : plateforme, connectivité, OTA et
+# boutons. Il est inclus par `roomnode-base.yaml` (bring-up minimal) et par
+# `roomnode-voice.yaml` (micro + Assist), afin que les deux profils
+# partagent exactement la même configuration matérielle.
+#
+# Secrets : ce dépôt ne contient AUCUN secret. Fournir `secrets.yaml`
+# localement (voir secrets.example.yaml). Les secrets sont résolus par
+# rapport au fichier qui les déclare : ils sont donc déclarés ici.
+
+esphome:
+  name: roomnode
+  friendly_name: RoomNode
+  comment: "HA RoomNode — bring-up ESP32-S3-LCD-0.85"
+
+esp32:
+  board: esp32-s3-devkitc1-n8r8
+  variant: esp32s3
+  framework:
+    type: esp-idf
+    version: recommended
+  flash_size: 8MB
+
+# PSRAM 8 Mo octal (la carte embarque un ESP32-S3-PICO-1-N8R8).
+# Indispensable pour les buffers audio et l'écran.
+psram:
+  mode: octal
+  speed: 80MHz
+
+logger:
+  level: INFO
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+  reboot_timeout: 15min
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "RoomNode-Setup"
+    password: !secret wifi_ap_password
+
+captive_portal:
+
+# Boutons de la carte (tableau GPIO complet dans docs/hardware.md).
+# GPIO0 = BOOT, GPIO4 = PLUS, GPIO5 = PWR.
+# Le PWR est un bouton d'alimentation : ne pas l'utiliser comme actionneur.
+binary_sensor:
+  - platform: gpio
+    id: btn_boot
+    name: "RoomNode Button Boot"
+    pin:
+      number: GPIO0
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      - logger.log: "BOOT press"
+
+  - platform: gpio
+    id: btn_plus
+    name: "RoomNode Button Plus"
+    pin:
+      number: GPIO4
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      - logger.log: "PLUS press"
