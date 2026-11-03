@@ -1,0 +1,18 @@
+# HA RoomNode — cible V1 4.3C + capteurs (issue #3)
+#
+# Combine le profil V1 (ecran RGB 800x480, tactile GT911, micro ES7210
+# + Assist) et le package capteurs externes (SHT40 + radar LD2410C).
+#
+# Ce profil est autonome : il inclui le socle et le profil V1, plus les
+# capteurs. Il ne modifie aucun fichier du profil V1, ce qui garde la
+# separation des branches :
+#   - feature/issue-7-v1-43c  : socle 4.3C (ecran, tactile, micro)
+#   - feature/issue-3-sensors : ce profil (+ capteurs)
+#
+# Aucun secret dans ce depot : le fichier de secrets local n'est jamais lu
+# par le script de validation (voir scripts/validate.sh).
+
+packages:
+  common: !include roomnode-43c-common.yaml
+  v1_43c: !include roomnode-43c.yaml
+  sensors: !include roomnode-43c-sensors.yaml

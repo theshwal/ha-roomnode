@@ -94,6 +94,7 @@ Adresses I²C : ES7210 = `0x40`, ES8311 = `0x18`, GT911 = `0x5D`.
 | TF card CS | CH422G pin 4 (EXIO4, partagé avec PA_CTRL) |
 | USB natif | GPIO19 / GPIO20 |
 | RTC PCF85063 SDA / SCL | GPIO8 / GPIO9 (bus I²C partagé) |
+| **UART radar LD2410C** (issue #3) | **GPIO15 (TX) / GPIO12 (RX)** — `I2S_DSDIN` et `SD_SCK`, libres en V1 |
 | DI0 / DI1 (entrées isolées) | CH422G (EXIO0 / EXIO5) |
 | DO0 / DO1 (sorties isolées) | CH422G (EXIO6 / EXIO7) |
 | Reset écran / backlight / PA_CTRL / CS TF | CH422G pins 3 / 2 / 4 / 4 |
@@ -109,6 +110,10 @@ Adresses I²C : ES7210 = `0x40`, ES8311 = `0x18`, GT911 = `0x5D`.
 | CH422G | 1 (reset tactile), 2 (backlight), 3 (reset écran) | aucune |
 Le GPIO15 (`I2S_DSDIN`, TX vers l'ES8311) et GPIO11/12/13 (TF) restent libres
 car ces fonctions ne sont pas activées dans le profil livré.
+
+> **Avec le profil `roomnode-43c-full` (issue #3)**, GPIO15 (TX) et GPIO12
+> (RX) sont affectés au radar LD2410C. Le câblage et l'alimentation 5 V du
+> radar sont documentés dans [sensors-43c.md](sensors-43c.md).
 
 ## Contraintes à respecter
 
