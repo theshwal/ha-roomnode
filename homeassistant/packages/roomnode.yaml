@@ -26,8 +26,9 @@ script:
       - variables:
           # REMPLACER par de vrais IDs d'entités notify.*_speak.
           # Identifiants d'exemple neutres : aucun appareil réel publié.
+          # La clé DOIT correspondre au `node_name` du nœud ESPHome.
           echo_by_roomnode:
-            roomnode_test: notify.replace_with_your_echo_speak
+            roomnode_salon: notify.replace_with_your_echo_speak
           target_speak: "{{ echo_by_roomnode.get(roomnode | default('', true), '') }}"
           spoken_text: "{{ message | default('', true) | string | trim }}"
       - condition: template

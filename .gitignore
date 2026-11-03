@@ -11,3 +11,7 @@ secrets.yaml
 *.map
 *.log
 .DS_Store
+
+# Python (tests statiques du pont Alexa)
+__pycache__/
+*.py[cod]

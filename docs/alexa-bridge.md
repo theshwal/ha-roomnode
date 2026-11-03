@@ -24,11 +24,32 @@
       packages: !include_dir_named packages
     ```
 
-4. Modifier **uniquement localement** `echo_by_roomnode` dans le package, par exemple `roomnode_test: notify.MON_ECHO_speak`, en utilisant les vraies entités constatées dans HA.
+4. Modifier **uniquement localement** `echo_by_roomnode` dans le package, par exemple `roomnode_salon: notify.MON_ECHO_speak`, en utilisant les vraies entités constatées dans HA. La clé doit correspondre au `node_name` du nœud (voir ci-dessous).
 5. Redémarrer Home Assistant après contrôle de configuration (ou recharger les scripts selon le mode de déploiement).
-6. Dans **Outils de développement → Actions**, exécuter `script.roomnode_speak` avec `roomnode: roomnode_test` et `message: Bonjour`. La réponse doit venir uniquement de l'Echo correspondant.
+6. Dans **Outils de développement → Actions**, exécuter `script.roomnode_speak` avec `roomnode: roomnode_salon` et `message: Bonjour`. La réponse doit venir uniquement de l'Echo correspondant.
 7. Sur la fiche de l'appareil ESPHome dans Home Assistant, autoriser **Allow the device to perform Home Assistant actions** ; sans cela `homeassistant.action` est refusé.
-8. Intégrer le bloc de l'exemple ESPHome au firmware matériel, en remplaçant `roomnode_microphone` par l'ID réel du microphone et `roomnode_test` par l'ID du nœud.
+8. Intégrer le bloc de l'exemple ESPHome au firmware matériel, en remplaçant `roomnode_microphone` par l'ID réel du microphone et en définissant la substitution `node_name`.
+
+## Identifiant de nœud : une substitution, pas une valeur en dur
+
+L'exemple ESPHome envoie `roomnode: ${node_name}`. Cette substitution doit
+être définie dans la configuration propre à la carte, par exemple :
+
+```yaml
+substitutions:
+  node_name: roomnode-salon
+```
+
+Avantages :
+
+- le **même extrait** sert à toutes les pièces, sans duplication ;
+- la valeur envoyée correspond à la clé de `echo_by_roomnode` côté HA ;
+- un nœud dont le nom n'est pas dans l'allowlist est **rejeté** par le
+  script (aucune diffusion globale) : l'erreur de configuration devient
+  visible dans les logs au lieu de parler dans la mauvaise pièce.
+
+Le test statique `test_esphome_hook_is_documented_and_templated` vérifie que
+la valeur reste une substitution, et non un identifiant figé.
 
 ## Limites connues — ne pas masquer
 
