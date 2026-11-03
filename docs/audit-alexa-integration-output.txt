@@ -1,0 +1,15 @@
+Audit PR #6 - integration on_tts_start -> script.roomnode_speak
+Configuration seule (valeurs fictices), sans deploiement ni essai materiel.
+
+Extract #6 insere dans le bloc voice_assistant: du profil V1 4.3C,
+avec roomnode: ${node_name} au lieu de roomnode_test en dur.
+
+esphome config  -> INFO Configuration is valid!
+esphome compile -> exit 0
+
+roomnode.bin binary size 0xe11a0 bytes. Smallest app partition is 0x7c0000 bytes. 0x6dee60 bytes (89%) free.
+RAM:   [===       ]  32.3% (used 110339 bytes from 341760 bytes)
+Flash: [=         ]  11.3% (used 921907 bytes from 8126464 bytes)
+INFO Successfully compiled program.
+
+Aucune chaine HA/Alexa testee. La PR #6 reste draft.

@@ -196,10 +196,96 @@ configuration seule, **sans déploiement ni essai matériel** :
 | Identifiants | à aligner : l'extrait utilise `id: roomnode_assist` et `roomnode_microphone`, le profil V1 utilise `id: va` et `mic_es7210` |
 | Chaîne Home Assistant → Alexa Devices | **non testée** — la PR #6 reste draft |
 
-Deux écarts à corriger lors de l'intégration : les **identifiants** et le
-fait que l'extrait de #6 est écrit pour un profil à micro simple, alors que
-le profil V1 déclare une **liste** de sources micro
+### Déclenchement : une fois par réponse
+
+Vérifié dans le code du composant ESPHome 2026.10.1
+(`voice_assistant.cpp`, cas `VOICE_ASSISTANT_TTS_START`) :
+
+- le déclencheur est appelé **une seule fois par réponse TTS**, avec le texte
+  complet dans la variable `x` ;
+- un événement TTS **sans texte** est ignoré (rien n'est envoyé à l'Echo) ;
+- un texte de plus de **500 caractères** est tronqué par ESPHome à 497
+  caractères + « ... ».
+
+La borne de 500 caractères du script HA (`0 < length <= 500`) est donc
+**cohérente** avec le comportement d'ESPHome : un texte tronqué par le
+composant passe encore le filtre, un texte vide est rejeté des deux côtés.
+
+### Double déclenchement
+
+Le risque est réel et **couvert par des tests statiques dans la PR #6**
+(`tests/test_alexa_bridge.py`) :
+
+| Cas | Garantie |
+| --- | --- |
+| Nœud non enregistré dans l'allowlist | **rejeté** — `target_speak` est vide, la condition échoue, aucune diffusion globale |
+| Cible qui n'est pas une entité `notify.*_speak` | **rejeté** (ex. `notify.all`) |
+| Message vide ou > 500 caractères | **rejeté** |
+| Deux nœuds voisins | **garantie structurelle** : le routage est par `roomnode`, donc un Echo par nœud. Mais deux nœuds **distincts** ne partagent pas la même clé `roomnode` — le test « deux nœuds voisins ne produisent pas de double réponse » reste **à faire sur matériel** |
+
+Le risque de double énoncé **par un seul nœud** (réactivation de l'écoute
+pendant que l'Echo parle) est explicitement **hors périmètre du package** :
+la doc de #6 le signale et renvoie au développement d'un anti-bouclage au
+niveau ESPHome/Assist. C'est un point ouvert, pas une solution.
+
+### Cas d'erreur
+
+| Cas | Traitement |
+| --- | --- |
+| `homeassistant.action` refusée par HA (device non autorisé) | l'action ESPHome `homeassistant.action` lève une erreur → le `on_error` de l'extrait #6 journalise « impossible de demander la réponse vocale à Home Assistant » |
+| Amazon / Alexa Devices indisponible | `notify.send_message` échoue **après** que la commande HA a pu s'exécuter. La doc de #6 impose que cet échec **n'annule ni ne rejoue** l'action. Le script est en `mode: queued`, `max: 10` : une saturation de la file est un point de vigilance |
+| Message non prononçable ( Echo absent ) | aucune relance automatique n'est implémentée |
+
+### Sécurité — ce qui est vérifié
+
+| Mesure | État |
+| --- | --- |
+| Routage par allowlist `roomnode → notify.*_speak`, jamais « dernier Echo appelé » | **vérifié** par test statique |
+| Refus des cibles non-`notify.*_speak` | **vérifié** par test statique |
+| Bornes de taille de message | **vérifiées** par test statique |
+| Aucun secret, IP, identifiant Amazon ou nom d'appareil réel dans le dépôt | **vérifié** : le mapping d'exemple est `roomnode_test: notify.replace_with_your_echo_speak` |
+| Autorisation HA requise | documentée : « Allow the device to perform Home Assistant actions » |
+
+### Écart concret à corriger : l'identifiant de nœud est figé
+
+L'extrait de #6 envoie `roomnode: roomnode_test` en dur. Or la configuration
+par instance de ce dépôt expose déjà une substitution `node_name`
+(`firmware/roomnode-43c-common.yaml`). Pour que la PR #6 soit réutilisable
+pièce par pièce, le hook doit envoyer `${node_name}` :
+
+```yaml
+  on_tts_start:
+    - homeassistant.action:
+        action: script.roomnode_speak
+        data:
+          roomnode: ${node_name}
+```
+
+C'est **la seule correction nécessaire** du côté ESPHome pour rendre
+l'extract #6 compatible avec la paramétrisation par pièce. Elle n'est pas
+appliquée ici : la PR #6 est lapropriété de l'extrait, et l'appliquer
+supprimerait la valeur d'exemple lisible qui sert de référence au lecteur.
+
+**Cette correction est validée** : l'extrait modifié (`roomnode:
+${node_name}`, bloc `on_tts_start` avec `on_error`) passe `esphome config`
+puis `esphome compile` sur le profil V1 4.3C.
+
+```
+roomnode.bin binary size 0xe11a0 bytes. Smallest app partition is 0x7c0000 bytes. 0x6dee60 bytes (89%) free.
+RAM:   [===       ]  32.3% (used 110339 bytes from 341760 bytes)
+Flash: [=         ]  11.3% (used 921907 bytes from 8126464 bytes)
+INFO Successfully compiled program.
+```
+
+Extrait de journal :
+[`docs/audit-alexa-integration-output.txt`](audit-alexa-integration-output.txt).
+
+Deux autres écarts restent à aligner lors de l'intégration : les
+**identifiants** (`id: roomnode_assist` / `roomnode_microphone` contre
+`id: va` / `mic_es7210`) et le fait que l'extrait suppose un profil à
+micro simple alors que le profil V1 déclare une **liste** de sources micro
 (`microphone: [{microphone: mic_es7210, channels: [0]}]`).
 
-L'audit ne porte que sur la **validité de la configuration**. Il ne dit rien
-du comportement de la chaîne vocale, qui reste non testé de bout en bout.
+L'audit ne porte que sur la **validité de la configuration** et sur le
+comportement *documenté* du composant. Il ne dit rien du comportement de la
+chaîne vocale, qui reste non testé de bout en bout.
