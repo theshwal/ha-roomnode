@@ -41,3 +41,9 @@ substitutions:
   # Identifiant de l'entite HA qui porte l'identifiant de l'Echo pour cette
   # piece. Vide par defaut, meme raison.
   echo_target_entity: ""
+
+  # Le SSID du point d'acces de secours est derive automatiquement de
+  # `node_name` (voir firmware/roomnode-43c-common.yaml) : avec
+  # node_name = roomnode-salon, il vaut "roomnode-salon-Setup". Deux noeuds
+  # voisins emettent donc des SSID distincts, ce qui les rend
+  # distinguables au provisionnement. Aucun parametre a ajouter ici.

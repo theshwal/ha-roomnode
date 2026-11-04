@@ -70,15 +70,18 @@ Preuve par la compilation : le binaire produit s'appelle
 | --- | --- |
 | `node_name` | `roomnode-<piece>`, minuscules, unique sur le réseau local |
 | mDNS | `roomnode-<piece>.local` |
-| SSID du point d'accès de secours | `RoomNode-Setup` — **identique pour tous les nœuds** : prévoir un changement si deux cartes sont utilisées simultanément |
+| SSID du point d'accès de secours | **dérivé de `node_name`** : `<node_name>-Setup` (ex. `roomnode-salon-Setup`). Deux nœuds voisins sont donc distinguables au provisionnement |
 | Clé de chiffrement API | peut être partagée ; preferable une clé par nœud (le nœud est alors ajouté individuellement dans HA) |
 | Mot de passe OTA | peut être partagé |
 
-> **Point d'attention :** le SSID du point d'accès de secours est figé dans
-> `roomnode-43c-common.yaml` (`RoomNode-Setup`). Deux cartes branchées en même
-> temps sur un même réseau émettent le même SSID. Pour lever l'ambiguïté,
-> le rendre paramétrable (`ap_ssid`) dans une itération ultérieure, ou
-> débrancher la seconde carte pendant le provisionnement de la première.
+> **Point résolu :** le SSID du point d'accès de secours n'est plus figé.
+> Il dérive de la substitution `node_name`
+> (`ssid: "${node_name}-Setup"` dans `roomnode-43c-common.yaml`), donc
+> `roomnode-salon-Setup` pour une pièce donnée. Deux cartes voisines
+> émettent des SSID distincts et restent distinguables au provisionnement.
+> Le mot de passe du point d'accès reste un secret local, propre à chaque
+> installation.
+>
 > La clé de chiffrement API est, elle, propre au fichier de secrets : une
 > clé par nœud est la bonne pratique.
 
@@ -165,7 +168,7 @@ Extrait de journal :
 | Point | État |
 | --- | --- |
 | Séparation configuration commune / paramètres par nœud | **fait** (substitutions + fichier d'instance) |
-| Documentation BOM, câblage, alimentation, montage | **partiel** : `docs/gpio-43c.md` (câblage), `docs/hardware.md` (alimentation), `docs/sensors-43c.md` (radar). **BOM formel manquant** |
+| Documentation BOM, câblage, alimentation, montage | **fait pour la nomenclature et les contraintes** : [`docs/bom-43c.md`](bom-43c.md) (carte, capteurs, câblage, alimentation, limites de boîtier, sources) + `docs/gpio-43c.md`, `docs/sensors-43c.md`. **BOM chiffrée (prix) et photos : non faits** |
 | Boîtier : ouverture micros, fenêtre écran, façade radar non métallique, ventilation SHT40 | **non fait** |
 | Écriture installation / OTA / dépannage / sécurisation des secrets | **fait** pour ce qui est automatisable (§ 3, § 4, § 5) |
 | Qualification de deux nœuds voisins | **non fait** (demande deux cartes) |

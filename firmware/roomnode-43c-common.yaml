@@ -56,7 +56,11 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   ap:
-    ssid: "RoomNode-Setup"
+    # Le SSID du point d'acces de secours est derive du nom du noeud
+    # (substitution `node_name`), afin que deux noeuds voisins n'emettent
+    # pas le meme SSID et restent distinguables au provisionnement.
+    # Le mot de passe reste un secret local.
+    ssid: "${node_name}-Setup"
     password: !secret wifi_ap_password
 
 captive_portal:
