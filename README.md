@@ -43,6 +43,7 @@ Terminal domotique de pièce sous **ESPHome + Home Assistant** : écouter, mesur
 - [Installation, flash et plan de test 4.3C](docs/flash-43c.md)
 - [Plan de validation](docs/validation.md)
 - [Reproductibilité, installation et dépannage (issue #5)](docs/reproducibility.md)
+- [BOM et contraintes de boîtier 4,3″ (issue #5)](docs/bom-43c.md)
 
 ## Firmware
 
