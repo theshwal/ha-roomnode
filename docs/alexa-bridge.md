@@ -28,7 +28,38 @@
 5. Redémarrer Home Assistant après contrôle de configuration (ou recharger les scripts selon le mode de déploiement).
 6. Dans **Outils de développement → Actions**, exécuter `script.roomnode_speak` avec `roomnode: roomnode_salon` et `message: Bonjour`. La réponse doit venir uniquement de l'Echo correspondant.
 7. Sur la fiche de l'appareil ESPHome dans Home Assistant, autoriser **Allow the device to perform Home Assistant actions** ; sans cela `homeassistant.action` est refusé.
-8. Intégrer le bloc de l'exemple ESPHome au firmware matériel, en remplaçant `roomnode_microphone` par l'ID réel du microphone et en définissant la substitution `node_name`.
+8. Intégrer le bloc de l'exemple ESPHome au firmware matériel. L'exemple est **déjà aligné** sur le firmware V1 4,3″ : il utilise `id: va`, la source `mic_es7210` au format **liste** (`channels: [0]`) et la substitution `${node_name}`. Il n'y a donc plus qu'à fusionner le bloc `on_tts_start` sous le `voice_assistant:` existant.
+
+## Alignement avec le firmware V1 4,3″
+
+L'extrait a été aligné sur le profil `firmware/roomnode-43c.yaml` de la cible
+V1 (Waveshare ESP32-S3-Touch-LCD-4.3C) :
+
+| Élément | Extrait aligné | Firmware V1 |
+| --- | --- | --- |
+| `voice_assistant.id` | `va` | `va` |
+| Source micro | `mic_es7210`, `channels: [0]` | `mic_es7210`, `channels: [0]` |
+| Identifiant de nœud | `${node_name}` | substitution `node_name` du socle |
+
+Le format **liste** de `microphone:` est requis par le firmware V1 (une
+source avec son canal) ; la forme scalaire de la première version de
+l'extrait n'était pas fusionnable.
+
+La fusion a été **validée par compilation réelle du firmware V1 complet**
+avec l'extrait aligné :
+
+```
+roomnode.bin binary size 0xe11b0 bytes. Smallest app partition is 0x7c0000 bytes. 0x6dee50 bytes (89%) free.
+RAM:   [===       ]  32.3% (used 110339 bytes from 341760 bytes)
+Flash: [=         ]  11.3% (used 921919 bytes from 8126464 bytes)
+INFO Successfully compiled program.
+```
+
+Extrait de journal :
+[`docs/audit-align-v1-output.txt`](docs/audit-align-v1-output.txt).
+
+> Cette compilation ne valide que la **fusion syntaxique**. La chaîne
+> Home Assistant → Alexa Devices reste **non testée**.
 
 ## Identifiant de nœud : une substitution, pas une valeur en dur
 

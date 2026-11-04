@@ -93,6 +93,22 @@ class AlexaBridgeContractTests(unittest.TestCase):
         self.assertIsNotNone(on_error, "the hook must handle action failures")
         self.assertTrue(str(on_error).strip())
 
+    def test_esphome_hook_ids_match_the_v1_firmware(self):
+        # The extract must use the identifiers of the V1 firmware for the
+        # Waveshare ESP32-S3-Touch-LCD-4.3C, so that it can be merged
+        # under that profile's existing voice_assistant: block without
+        # renaming anything.
+        self.assertEqual(self.sample["voice_assistant"]["id"], "va")
+        microphone = self.sample["voice_assistant"]["microphone"]
+        self.assertIsInstance(
+            microphone,
+            list,
+            "the V1 firmware declares a LIST of microphone sources",
+        )
+        self.assertEqual(len(microphone), 1)
+        self.assertEqual(microphone[0]["microphone"], "mic_es7210")
+        self.assertEqual(microphone[0]["channels"], [0])
+
     def test_esphome_hook_never_targets_a_broadcast(self):
         hook = self.sample["voice_assistant"]["on_tts_start"][0]["homeassistant.action"]
         payload = yaml.safe_dump(hook, allow_unicode=True)
