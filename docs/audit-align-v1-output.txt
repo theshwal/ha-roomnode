@@ -1,0 +1,16 @@
+Alignement de l extrait PR #6/#13 avec le firmware V1 4.3C
+
+Portee : firmware V1 4.3C COMPLET (origin/feature/issue-7-v1-43c)
+avec le bloc voice_assistant: de l extrait aligne (id: va,
+microphone: liste [mic_es7210 / channels 0], roomnode: ${node_name}).
+
+esphome config  -> INFO Configuration is valid!
+esphome compile -> exit 0
+
+roomnode.bin binary size 0xe11b0 bytes. Smallest app partition is 0x7c0000 bytes. 0x6dee50 bytes (89%) free.
+RAM:   [===       ]  32.3% (used 110339 bytes from 341760 bytes)
+Flash: [=         ]  11.3% (used 921919 bytes from 8126464 bytes)
+INFO Successfully compiled program.
+
+Tests statiques du pont Alexa : 9 tests OK.
+Aucune chaine HA/Alexa testee, aucun deploiement, aucun essai materiel.

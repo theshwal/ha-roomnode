@@ -1,6 +1,13 @@
 # EXTRACT ONLY — not a standalone firmware.
 # Merge under the existing voice_assistant: block in the board-specific config.
-# Device microphone "roomnode_microphone" must exist and work first.
+#
+# The microphone and the component id below are the ones of the HA RoomNode
+# V1 firmware for the Waveshare ESP32-S3-Touch-LCD-4.3C
+# (firmware/roomnode-43c.yaml) :
+#   - `mic_es7210` : source micro ES7210 declaree dans le bloc `microphone:`
+#     du profil materiel ;
+#   - `va` : identifiant du composant `voice_assistant` de ce profil.
+# Adapter ces deux noms si un autre profil est utilise.
 #
 # In the HA package, map the node identifier to your *real* Alexa Devices
 # Speak entity. Use a stable per-device node_id, never the last Alexa device
@@ -11,11 +18,16 @@
 # firmware/roomnode-43c-common.yaml). It must match a key of the
 # `echo_by_roomnode` map in the Home Assistant package.
 #
+# The `microphone:` key uses the LIST form required by the V1 firmware
+# (a source with its channel), not the scalar form of the first draft.
+#
 # NOTE: on_tts_start requires a TTS step enabled in the Assist pipeline,
 # despite the absence of any local speaker.
 voice_assistant:
-  id: roomnode_assist
-  microphone: roomnode_microphone
+  id: va
+  microphone:
+    - microphone: mic_es7210
+      channels: [0]
   on_tts_start:
     - homeassistant.action:
         action: script.roomnode_speak
